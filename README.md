@@ -15,7 +15,7 @@ Also of note, this is my second toy project with the Nim language, so there are 
 * Generate or build more specific objects for AWS services either from standard API definitions
 * More examples for other common AWS tasks
 
-## Includes
+## Modules
 
 This nimble package contains a few modules that may be of use for different types of development:
 
@@ -41,7 +41,7 @@ S3Client type has methods get_object(bucket,path) and put_object(bucket,path,pay
 
 ## Examples
 
-Some examples are provided with (s3_get_object.nim)[s3_get_object.nim] which utilizes the S3Client and (s3_put_object.nim)[s3_put_object.nim] which uses the AwsClient.
+Some examples are provided with [s3_get_object.nim](s3_get_object.nim) which utilizes the S3Client and [s3_put_object.nim](./s3_put_object.nim)which uses the AwsClient.
 
 ```
 > git clone https://github.com/Gooseus/nimaws
