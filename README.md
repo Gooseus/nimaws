@@ -41,11 +41,16 @@ S3Client type has methods get_object(bucket,path) and put_object(bucket,path,pay
 
 ## Examples
 
-Some examples are provided with [s3_get_object.nim](s3_get_object.nim) which utilizes the S3Client and [s3_put_object.nim](./s3_put_object.nim)which uses the AwsClient.
+Some examples are provided with [s3_get_object.nim](s3_get_object.nim) which utilizes the S3Client helper type and [s3_put_object.nim](./s3_put_object.nim) which uses the core AwsClient type.
 
 ```
 > git clone https://github.com/Gooseus/nimaws
 > cd nimaws
+> export AWS_ACCESS_ID="Your access id"
+> export AWS_ACCESS_SECRET="Your access secret"
+
+** You'll also want to change the bucket variable in the example code to a bucket you have read/write access **
+
 > nim -c -d:ssl s3_put_object
 ...
 > echo "Test Object." | ./s3_put_object
