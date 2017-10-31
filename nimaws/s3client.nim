@@ -18,7 +18,7 @@ proc newS3Client*(credentials:(string,string),region:string):S3Client=
     httpclient = newAsyncHttpClient("nimaws-sdk/0.1.1; "&defUserAgent.replace(" ","-").toLower&"; darwin/16.7.0")
     scope = AwsScope(date:getAmzDateString(),region:region,service:"s3")
 
-  return S3Client(httpClient:httpclient, credentials:creds, scope:scope, key:"", key_expires:getGMTime(getTime()))
+  return S3Client(httpClient:httpclient, credentials:creds, scope:scope, key:"", key_expires:getTime())
 
 method get_object*(self:var S3Client,bucket,path:string) : Future[AsyncResponse] {.base.} =
   let params = {

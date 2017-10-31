@@ -15,7 +15,6 @@ Also of note, this is my second toy project with the Nim language, so there are 
 * Generate or write more service specific modules from API definitions
 * Make more examples for other common AWS tasks
 * Better documentation of public API
-* Cache the signing key on the client and check for signing key expiration to recreate key
 
 ## Modules
 
@@ -25,9 +24,23 @@ This nimble package contains a few modules that may be of use for different type
 
 Module for creating AWS Signatures (Version 4) based on their [insanely detailed and tedious process](http://docs.aws.amazon.com/general/latest/gr/signature-version-4.html).
 
-Provides procedures for creating a signing key and for adding the full AWS authorization (and other required keys) to a table of headers.
+**Exports**
 
-The key used for signing requests uses the region, service, date and access secret can be cached for 7 days after creation.
+#### create_canonical_request([...](./nimaws/sigv4.nim#L108)) [~source](./nimaws/sigv4.nim#L108)
+
+Return the canonical request string which is used to create the final signature (see source links) from a whole lot of request data.  Exported mostly for testing purposes.
+
+#### create_signing_key([...](./nimaws/sigv4.nim#L129)) [~source](./nimaws/sigv4.nim#L129)
+
+Return an AWS Signature v4 signing key from the Access Secret Credentials and Credential Scope.  The key is valid for signing requests for 7 days, so this procedure should only need to be used one a week.
+
+#### create_aws_authorization(id,key,[...](./nimaws/sigv4.nim#L135)) [~source](./nimaws/sigv4.nim#L135)
+
+Return an AWS Authorization string from the Access ID, Signing Key, and the Scope/Request parameters.
+
+#### create_aws_authorization(AwsCredentials,[...](./nimaws/sigv4.nim#L165)) [~source](./nimaws/sigv4.nim#L165)
+
+Create and return a Signing Key while adding the AWS Authorization string to the httpClient.headers
 
 ### awsclient.nim
 
@@ -43,7 +56,7 @@ S3Client type has methods get_object(bucket,path) and put_object(bucket,path,pay
 
 ## Examples
 
-Some examples are provided with [s3_put_object.nim](./s3_put_object.nim) which uses the core AwsClient type and [s3_get_object.nim](s3_get_object.nim),[s3_list_objects.nim](s3_list_objects.nim),[s3_list_buckets.nim](s3_list_buckets.nim) which utilize the S3Client helper type.
+Some examples are provided with [s3_put_object.nim](./s3_put_object.nim) which uses the core AwsClient type and [s3_get_object.nim](./s3_get_object.nim), [s3_list_objects.nim](./s3_list_objects.nim), [s3_list_buckets.nim](./s3_list_buckets.nim) which utilize the S3Client helper type.
 
 ```
 > git clone https://github.com/Gooseus/nimaws

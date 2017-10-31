@@ -105,7 +105,7 @@ proc create_canonical_and_signed_headers(headers:TableRef):(string,string)=
 
 # create the canonical request string
 # http://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
-proc create_canonical_request(headers: var TableRef, action: string, url: string, payload: string="", unsignedPayload:bool=true, contentSha:bool=true): (string,string)=
+proc create_canonical_request*(headers: var TableRef, action: string, url: string, payload: string="", unsignedPayload:bool=true, contentSha:bool=true): (string,string)=
   let 
     uri = parseUri(url)
     cpath = create_canonical_path(uri.path)
@@ -126,15 +126,16 @@ proc create_canonical_request(headers: var TableRef, action: string, url: string
   return (signed, ("$1\n$2\n$3\n$4\n$5\n$6" % [action,cpath,cquery,chead,signed,hashload]))
 
 # create a signing key with a lot of hashing of the credential scope
-proc create_signing_key*(creds:AwsCredentials,scope:AwsScope,termination:string=term): string =
+proc create_signing_key*(secret:string,scope:AwsScope,termination:string=term): string =
   # (a ?$ b) => $hmac_sha256(a,b)
-  return ("AWS4"&creds[1]) ?$ scope.date[0..7] ?$ scope.region ?$ scope.service ?$ termination
+  return ("AWS4"&secret) ?$ scope.date[0..7] ?$ scope.region ?$ scope.service ?$ termination
   # ? cleaner than $hmac_sha256($hmac_sha256($hmac_sha256($hmac_sha256("AWS4"&secret, date[0..7]),region),service),termination) ?
 
-# add AWS headers, including Authorization, to the header table, return our signing key (good for 7 days withi scope)
-proc create_aws_authorization*(request:(string,string,string),
+# add AWS headers, including Authorization, to the header table, return our signing key (good for 7 days with scope)
+proc create_aws_authorization*(id:string,
+                              key:string,
+                              request:(string,string,string),
                               headers:var TableRef,
-                              creds:AwsCredentials,
                               scope:AwsScope,
                               opts:(string,string)=(alg,term)):string=
 
@@ -144,6 +145,8 @@ proc create_aws_authorization*(request:(string,string,string),
   # create signed headers and canonical request string
   # http://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
   let (signed_head, canonical_request) = create_canonical_request(headers, request[0], request[1], request[2])
+  # delete host header since it's added by the the httpclient.request later and having 2 Host headers is Forbidden
+  headers.del("Host")
 
   # create string to sign
   # http://docs.aws.amazon.com/general/latest/gr/sigv4-create-string-to-sign.html
@@ -152,12 +155,21 @@ proc create_aws_authorization*(request:(string,string,string),
   # create signing key and export for caching
   # sign the string with our key
   # http://docs.aws.amazon.com/general/latest/gr/sigv4-calculate-signature.html
-  result = create_signing_key(creds,scope,opts[1])
-  let sig = result !$ to_sign
+  let sig = key !$ to_sign
 
+  # create AWS authorization header to add to request
+  # http://docs.aws.amazon.com/general/latest/gr/sigv4-add-signature-to-request.html
+  return ("$1 Credential=$2/$3/$4, SignedHeaders=$5, Signature=$6" % [opts[0],id,$scope,opts[1],signed_head,sig])
+
+# add AWS headers, including Authorization, to the header table, return our signing key (good for 7 days withi scope)
+proc create_aws_authorization*(creds:AwsCredentials,
+                              request:(string,string,string),
+                              headers:var TableRef,
+                              scope:AwsScope,
+                              opts:(string,string)=(alg,term)):string=
+
+  result = create_signing_key(creds[1],scope,opts[1])
   # add AWS authorization header
   # http://docs.aws.amazon.com/general/latest/gr/sigv4-add-signature-to-request.html
-  headers["Authorization"] = @[("$1 Credential=$2/$3/$4, SignedHeaders=$5, Signature=$6" % [opts[0],creds[0],$scope,opts[1],signed_head,sig])]
+  headers["Authorization"] = @[create_aws_authorization(creds[0],result,request,headers,scope,opts)]
   
-  # delete host header since it's added by the the httpclient.request later and having 2 Host headers is Forbidden
-  headers.del("Host")

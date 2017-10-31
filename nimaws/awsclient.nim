@@ -21,12 +21,17 @@ proc getAmzDateString*():string=
   return format(getGMTime(getTime()), iso_8601_aws)
 
 type
+  AwsRequest* = tuple
+    action: string
+    url: string
+    payload: string
+
   AwsClient* {.inheritable.} = object
     httpClient*: AsyncHttpClient
     credentials*: AwsCredentials
     scope*: AwsScope
     key*: string
-    key_expires*: TimeInfo
+    key_expires*: Time
 
 proc newAwsClient*(credentials:(string,string),region,service:string):AwsClient=
   let
@@ -35,7 +40,7 @@ proc newAwsClient*(credentials:(string,string),region,service:string):AwsClient=
     httpclient = newAsyncHttpClient("nimaws-sdk/0.1.1; "&defUserAgent.replace(" ","-").toLower&"; darwin/16.7.0")
     scope = AwsScope(date:getAmzDateString(),region:region,service:service)
   
-  return AwsClient(httpClient:httpclient, credentials:creds, scope:scope,key:"",key_expires:getGMTime(getTime()))
+  return AwsClient(httpClient:httpclient, credentials:creds, scope:scope,key:"", key_expires:getTime())
 
 proc request*(client:var AwsClient,params:Table):Future[AsyncResponse]=
   var
@@ -52,12 +57,20 @@ proc request*(client:var AwsClient,params:Table):Future[AsyncResponse]=
   if params.hasKey("path"):
     path = params["path"]
 
-  let url = ("https://$1.amazonaws.com/" % client.scope.service) & path
+  let 
+    url = ("https://$1.amazonaws.com/" % client.scope.service) & path
+    req : AwsRequest = (action: action, url: url, payload: payload)
 
-  let req = (action, url, payload)
-
-  client.key = create_aws_authorization(req, client.httpClient.headers.table, client.credentials, client.scope)
-  client.key_expires = getGmTime(getTime()) + initInterval(days=7)
-
+  # Add signing key caching so we can skip a step
+  # utilizing some operator overloading on the create_aws_authorization proc.
+  # if passed a key and not headers, just return the authorization string; otherwise, create the key and add to the headers
+  if client.key_expires <= getTime():
+    client.key = create_aws_authorization(client.credentials, req, client.httpClient.headers.table, client.scope)
+    client.key_expires = getTime() + initInterval(days=7)
+  else:
+    let auth = create_aws_authorization(client.credentials[0], client.key, req, client.httpClient.headers.table, client.scope)
+    client.httpClient.headers.add("Authorization", auth)
+  
+  echo client.httpClient.headers.table
+  echo url," ", action
   return client.httpClient.request(url,action,payload)
-
