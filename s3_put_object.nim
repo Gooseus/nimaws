@@ -12,9 +12,9 @@ if not existsEnv("AWS_ACCESS_ID") or not existsEnv("AWS_ACCESS_SECRET"):
 const credentials = (getEnv("AWS_ACCESS_ID"), getEnv("AWS_ACCESS_SECRET"))
 let
   bucket = "gooseus-nim-api-test"
-  objpath = "/testing/path/test_file.txt"
+  path = "/testing/path/test_file.txt"
   params = { 
-    "uri": (bucket&objpath),
+    "path": (bucket&path),
     "action": "PUT",
     "payload": stdin.readAll
   }.toTable

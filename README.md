@@ -4,7 +4,7 @@ A collection of nim modules for integrating with AWS.  Hardly a full SDK by any 
 
 ## Current Status
 
-Very much a work in progress.  Sigv4 hasn't been tested extensively and so it'll certainly fail for certain requests.  I successfully tested simple S3 GETs and PUTs without querystring or header parameters.
+Very much a work in progress.  Sigv4 hasn't been tested extensively and so it'll certainly fail for certain requests.  I successfully tested simple S3 GETs and PUTs without any querystrings or complicated header parameters.
 
 Also of note, this is my second toy project with the Nim language, so there are may be some anti-patterns and non-idiomatic styles as I'm still mostly muddling through.
 
@@ -12,8 +12,10 @@ Also of note, this is my second toy project with the Nim language, so there are 
 
 * Fix the one test written (sigv4_test.nim)
 * Write tests for `tests/aws-sig-v4-test-suite/*`
-* Generate or build more specific objects for AWS services either from standard API definitions
-* More examples for other common AWS tasks
+* Generate or write more service specific modules from API definitions
+* Make more examples for other common AWS tasks
+* Better documentation of public API
+* Cache the signing key on the client and check for signing key expiration to recreate key
 
 ## Modules
 
@@ -29,7 +31,7 @@ The key used for signing requests uses the region, service, date and access secr
 
 ### awsclient.nim
 
-Module provides an inheritable AwsClient object type and constructor function which takes a set of AWS credentials and a Scope(the Date, Region and Service) the client will be operating within.
+Module provides an inheritable AwsClient object type and constructor procedure which takes a set of AWS Credentials (Access ID and Secret) the client will be operating as and a Scope (Date, Region and Service) the client will be operating under.
 
 A request procedure takes an AwsClient and set of request parameters, signs the request and returns a Future[AsyncResponse] like  AsyncHttpClient.request.
 
@@ -41,7 +43,7 @@ S3Client type has methods get_object(bucket,path) and put_object(bucket,path,pay
 
 ## Examples
 
-Some examples are provided with [s3_get_object.nim](s3_get_object.nim) which utilizes the S3Client helper type and [s3_put_object.nim](./s3_put_object.nim) which uses the core AwsClient type.
+Some examples are provided with [s3_put_object.nim](./s3_put_object.nim) which uses the core AwsClient type and [s3_get_object.nim](s3_get_object.nim),[s3_list_objects.nim](s3_list_objects.nim),[s3_list_buckets.nim](s3_list_buckets.nim) which utilize the S3Client helper type.
 
 ```
 > git clone https://github.com/Gooseus/nimaws

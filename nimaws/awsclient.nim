@@ -31,22 +31,33 @@ type
 proc newAwsClient*(credentials:(string,string),region,service:string):AwsClient=
   let
     creds = AwsCredentials(credentials)
-    httpclient = newAsyncHttpClient("aws-sdk-nim/0.0.1; "&defUserAgent.replace(" ","-").toLower&"; darwin/16.7.0")
+    # TODO - use some kind of template and compile-time variable to put the correct kernel used to build the sdk in the UA?
+    httpclient = newAsyncHttpClient("nimaws-sdk/0.1.1; "&defUserAgent.replace(" ","-").toLower&"; darwin/16.7.0")
     scope = AwsScope(date:getAmzDateString(),region:region,service:service)
   
   return AwsClient(httpClient:httpclient, credentials:creds, scope:scope,key:"",key_expires:getGMTime(getTime()))
 
 proc request*(client:var AwsClient,params:Table):Future[AsyncResponse]=
-  let url = ("https://$1.amazonaws.com/" % client.scope.service) & params["uri"]
-  var payload = ""
+  var
+    action = "GET"
+    payload = ""
+    path = ""
     
+  if params.hasKey("action"):
+    action = params["action"]
+
   if params.hasKey("payload"):
     payload = params["payload"]
 
-  let req = (params["action"], url, payload)
+  if params.hasKey("path"):
+    path = params["path"]
+
+  let url = ("https://$1.amazonaws.com/" % client.scope.service) & path
+
+  let req = (action, url, payload)
 
   client.key = create_aws_authorization(req, client.httpClient.headers.table, client.credentials, client.scope)
   client.key_expires = getGmTime(getTime()) + initInterval(days=7)
 
-  return client.httpClient.request(url,params["action"],payload)
+  return client.httpClient.request(url,action,payload)
 

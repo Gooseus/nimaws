@@ -1,5 +1,5 @@
 #[
-  Simple example of using a nim S3Client to get an object from an S3 bucket
+  Simple example of using a nim S3Client to get a list of S3 buckets
 ]#
 
 import os, tables, times, math, asyncdispatch, httpclient
@@ -9,14 +9,11 @@ if not existsEnv("AWS_ACCESS_ID") or not existsEnv("AWS_ACCESS_SECRET"):
   quit("No credentials found in environment.")
 
 const credentials = (getEnv("AWS_ACCESS_ID"), getEnv("AWS_ACCESS_SECRET"))
-let 
-  bucket = "gooseus-nim-api-test"
-  path = "/testing/path/test_file.txt"
 
 var client = newS3Client(credentials,"us-east-1")
 
 try:
-  let res = waitFor client.get_object(bucket, path)
+  let res = waitFor client.list_buckets()
   echo waitFor res.body
 except HttpRequestError:
   echo "http request error: "
