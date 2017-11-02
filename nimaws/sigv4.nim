@@ -10,6 +10,7 @@ import sequtils, algorithm, tables, nimSHA2
 import securehash, hmac, base64, re, unicode
 from uri import parseUri
 
+
 type
   AwsCredentials* = tuple
     id: string
@@ -20,19 +21,13 @@ type
     region*: string
     service*: string
 
-  AwsCredentialScope* = object
-    credentials*: AWSCredentials
-    date*: string
-    region*: string
-    service*: string
-    signed_key*: string
-    expires*: TimeInfo
 
 # Our AWS4 constants, not quite sure how to handle these, so they act as defaults
 # TODO - Support more just SHA256 hashing for sigv4
 const 
   alg = "AWS4-HMAC-SHA256"
   term = "aws4_request"
+
 
 # Some convenience operators, for fun and aesthetics
 proc `$`(s:AwsScope):string=
@@ -49,21 +44,15 @@ proc `?$`(k,s:string):string=
 
 # Copied from cgi library and modified to fit the AWS-approved uri_encode
 # http://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-header-based-auth.html
-proc uri_encode(s:string, encSlash:bool):string=
+# Varriount + Yardanico method
+proc uri_encode(s: string, notEncode: set[char]): string =
   result = newStringOfCap(s.len + s.len shr 2) # assume 12% non-alnum-chars
-  for i in 0..s.len-1:
-    case s[i]
-    of 'a'..'z', 'A'..'Z', '0'..'9', '-', '.', '_', '~': add(result, s[i])
-    of '/': 
-      if encSlash: add(result, "%2F")
-      else: add(result,s[i])
+  for i in 0..(s.len - 1):
+    if s[i] in notEncode+{'a'..'z', 'A'..'Z', '0'..'9', '-', '.', '_', '~'}:
+      add(result, s[i])
     else:
       add(result, '%')
       add(result, toHex(ord(s[i]), 2).toUpperASCII)
-
-# Overloading so we can use in map without an error
-proc uri_encode(s:string):string=
-  return uri_encode(s,true)
 
 # trim leading and trailing, as well as collapse multiple into single
 proc condense_whitespace(x:string):string=
@@ -71,37 +60,55 @@ proc condense_whitespace(x:string):string=
 
 # don't encode the slashes in the path
 proc create_canonical_path(path:string):string=
-  return uri_encode(path,false)
+  return uri_encode(path, {'/'})
 
-# create the canonical querystring string
 # TODO - Test sigv4 with query string parameters to sign
-proc create_canonical_qs(query:string):string=
-  if query.len<1:return ""
-  var qs = query.split("&")
-  sort(qs, cmp[string])
-  qs = qs.map(proc (x:string):string=x.split("=").map(uri_encode).join("="))
-  return qs.join("&")
+# create the canonical querystring string
+# Varriount method
+proc create_canonical_qs(query: string): string =
+  result = ""
+  if query.len < 1:
+    return result
+
+  var queryParts = query.split("&")
+  sort(queryParts, cmp[string])
+
+  for part in queryParts:
+    result.add(uri_encode(part, {'='}))
 
 # create the canonical and signed headers strings
-proc create_canonical_and_signed_headers(headers:TableRef):(string,string)=
+# Varriount method
+proc create_canonical_and_signed_headers(headers: TableRef): (string, string) =
+  # First create an ordered list of the header names
   var 
-    canonical = ""
-    signed = ""
-    heads : seq[string] = @[]
-    lhead = {"host": heads }.newTable
+    headerNames = newSeq[string](len(headers))
+    index = 0
+  
+  for headerName in keys(headers):
+    shallowCopy(headerNames[index], headerName)
+    inc index
 
-  for k in keys(headers):
-    lhead[k.toLower()] = headers[k]
-    heads.add(k.toLower())
-  
-  sort(heads, cmp[string])
-  signed = heads.join(";")
-  
-  var val = ""
-  for name in heads:
-    val = lhead[name].map(condense_whitespace).join("")
-    canonical &= name&":"&val&"\n"
-  return (canonical,signed)
+  sort(headerNames, cmp[string])
+
+  # Next, create the canonical headers string and the signed headers string
+  var
+    canonicalHeaders = ""
+    signedHeaders = ""
+  for name in headerNames:
+    let loweredName = toLower(name)
+
+    signedHeaders.add(loweredName)
+    canonicalHeaders.add(loweredName)
+    canonicalHeaders.add(':')
+
+    let values = headers[name]
+    for value in values:
+      canonicalHeaders.add(condenseWhitespace(value))
+
+    canonicalHeaders.add("\n")
+    signedHeaders.add(';')
+
+  return (canonicalHeaders, signedHeaders[0..<signedHeaders.high])
 
 # create the canonical request string
 # http://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
