@@ -9,6 +9,7 @@ license       = "MIT"
 
 requires "nim >= 0.17.2", "hmac >= 0.1.4"
 
-# Exclude
+# Skips
 
 skipFiles = @["s3_get_object.nim","s3_list_buckets.nim","s3_list_objects.nim","s3_put_object.nim"]
+skipDirs = @["tests"]
