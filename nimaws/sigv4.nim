@@ -140,6 +140,9 @@ proc create_aws_authorization*(id:string,
                               opts:(string,string)=(alg,term)):string=
 
   # add our AWS date header
+  # TODO - Check for existing Date or X-Amz-Date header and use that instead
+  # mostly useful for testing I think
+  # check for correct format or let them fail on their own?
   headers["X-Amz-Date"] = @[scope.date]
 
   # create signed headers and canonical request string

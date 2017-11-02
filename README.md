@@ -16,64 +16,145 @@ Also of note, this is my second toy project with the Nim language, so there are 
 * Make more examples for other common AWS tasks
 * Better documentation of public API
 
+### Install with Nimble
+
+`> nimble install nimaws`
+
+See below for an explanation of each module.
+
 ## Modules
 
-This nimble package contains a few modules that may be of use for different types of development:
+This nimble package contains a few modules that may be of use for different types of development. *Everything is very alpha, help with testing and improvements welcome.*
+
+* If you want to build your own AWS SDK development, you can use the `sigv4` module to help with the request signing.
+* If you want to develop your own AWS service modules you can use the `awsclient` module which provides a general client for making signed requests to AWS.
+* If you just want to integrate your own programs with specific AWS services, then use the module for that service (`s3client` for S3, that's it, but more to come hopefully).
+
+See Examples section for how to use service specific modules.  Check the source code for other examples.
 
 ### sigv4.nim
 
 Module for creating AWS Signatures (Version 4) based on their [insanely detailed and tedious process](http://docs.aws.amazon.com/general/latest/gr/signature-version-4.html).
 
-**Exports**
+```
+import nimaws/sigv4
+```
 
-#### create_canonical_request([...](./nimaws/sigv4.nim#L108)) [~source](./nimaws/sigv4.nim#L108)
+**Public API**
+
+#### [proc](./nimaws/sigv4.nim#L108) create_canonical_request\*(headers,action,url,payload,unsignedPayload,contentSha)
 
 Return the canonical request string which is used to create the final signature (see source links) from a whole lot of request data.  Exported mostly for testing purposes.
 
-#### create_signing_key([...](./nimaws/sigv4.nim#L129)) [~source](./nimaws/sigv4.nim#L129)
+#### [proc](./nimaws/sigv4.nim#L129) create_signing_key\*(secret,scope,termination)
 
 Return an AWS Signature v4 signing key from the Access Secret Credentials and Credential Scope.  The key is valid for signing requests for 7 days, so this procedure should only need to be used one a week.
 
-#### create_aws_authorization(id,key,[...](./nimaws/sigv4.nim#L135)) [~source](./nimaws/sigv4.nim#L135)
+#### [proc](./nimaws/sigv4.nim#L135) create_aws_authorization\*(id,key,request,headers,scope,opts)
 
 Return an AWS Authorization string from the Access ID, Signing Key, and the Scope/Request parameters.
 
-#### create_aws_authorization(AwsCredentials,[...](./nimaws/sigv4.nim#L165)) [~source](./nimaws/sigv4.nim#L165)
+#### [proc](./nimaws/sigv4.nim#L165) create_aws_authorization\*(credentials,request,headers,scope,opts)
 
-Create and return a Signing Key while adding the AWS Authorization string to the httpClient.headers
+Return a Signing Key and add the AWS Authorization string to the httpClient.headers.
 
 ### awsclient.nim
 
-Module provides an inheritable AwsClient object type and constructor procedure which takes a set of AWS Credentials (Access ID and Secret) the client will be operating as and a Scope (Date, Region and Service) the client will be operating under.
+Module for generating and dispatching signed requests to the AWS platform.
 
-A request procedure takes an AwsClient and set of request parameters, signs the request and returns a Future[AsyncResponse] like  AsyncHttpClient.request.
+```
+import nimaws/awsclient
+```
+
+**Public API**
+
+#### [type](./nimaws/awsclient.nim#L18) AwsClient* {.inheritable.} = object
+
+Inheritable object type which holds the AsyncHttpClient, AwsCredentials, AwsScope and for signing and making the client requests.
+
+#### [proc](./nimaws/awsclient.nim#L36) newAwsClient\*(credentials,region,service)
+
+Return an AwsClient object configured with the credentials and scope.  The AwsClient has an httpClient property which is an AsyncHttpClient.
+
+#### [proc](./nimaws/awsclient.nim#L45) request\*(client,params)
+
+Return the Future[AsyncResponse] object for a signed request to the AWS endpoint specified by the passed Table of params.
+
+#### [proc](./nimaws/awsclient.nim#L20) getAmzDateString\*()
+
+Return a date string formatted for AWS (ISO 8601).
 
 ### s3client.nim
 
-Helper module and example of building up a service specific using the awsclient.nim module.  Provides an S3Client (inherited from AwsClient) and constructor which takes credentials and a region.
+Helper module for generating signed requests specific for the S3 API.
 
-S3Client type has methods get_object(bucket,path) and put_object(bucket,path,payload) which should do exactly what they say
+```
+import nimaws/s3client
+```
+
+**Public API**
+
+#### [type](./nimaws/s3client.nim#L11) S3Client* = object of AwsClient
+
+#### [proc](./nimaws/awsclient.nim#L14) newS3Client\*(credentials,region)
+
+Return a S3Client object configured with the credentials and scope.  The S3Client object inherits from AwsClient
+
+#### [method](./nimaws/s3client.nim#L23) get_object\*(self,bucket,path)
+
+Downloads an S3 object from a bucket.
+
+#### [method](./nimaws/s3client.nim#L30) put_object\*(self,bucket,path,payload)
+
+Puts an object into an S3 bucket.
+
+#### [method](./nimaws/s3client.nim#L39) list_objects\*(self,bucket)
+
+List the objects in an S3 bucket. 
+
+#### [method](./nimaws/s3client.nim#L46) list_buckets\*(self)
+
+List buckets for an account.  You can't allow listing for only a specific set of buckets, [see here](https://stackoverflow.com/a/18956581).
 
 ## Examples
 
-Some examples are provided with [s3_put_object.nim](./s3_put_object.nim) which uses the core AwsClient type and [s3_get_object.nim](./s3_get_object.nim), [s3_list_objects.nim](./s3_list_objects.nim), [s3_list_buckets.nim](./s3_list_buckets.nim) which utilize the S3Client helper type.
+Some examples are provided:
+
+### Setup
+
+1.  Get Access Key Credentials (ID and Secret) from AWS
+2.  Make sure these credentials have the correct policies for an S3 bucket
+3.  Add these credentials to environment variables AWS_ACCESS_ID and AWS_ACCESS_SECRET
+4.  Change the bucket variables in the example code to a bucket you have read/write access to
+
+**AwsClient**
+
+* [s3_put_object.nim](./s3_put_object.nim)
+
+**S3Client**
+
+* [s3_get_object.nim](./s3_get_object.nim)
+* [s3_list_objects.nim](./s3_list_objects.nim)
+* [s3_list_buckets.nim](./s3_list_buckets.nim)
 
 ```
 > git clone https://github.com/Gooseus/nimaws
 > cd nimaws
 > export AWS_ACCESS_ID="Your access id"
 > export AWS_ACCESS_SECRET="Your access secret"
-
-** You'll also want to change the bucket variable in the example code to a bucket you have read/write access **
-
-> nim -c -d:ssl s3_put_object
+>
+> vi s3_put_object.nim; /* change bucket :wq */
+> nim -c -d:ssl s3_put_object.nim
 ...
+
 > echo "Test Object." | ./s3_put_object
 
 Transfer Complete.
 
-> nim -c -d:ssl s3_get_object
+> vi s3_get_object.nim; /* change bucket :wq */
+> nim -c -d:ssl s3_get_object.nim
 ...
+
 > ./s3_get_object
 Test Object.
 

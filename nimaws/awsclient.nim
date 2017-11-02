@@ -15,11 +15,6 @@ import sigv4
 
 export sigv4.AwsCredentials, sigv4.AwsScope
 
-const iso_8601_aws = "yyyyMMdd'T'HHmmss'Z'"
-
-proc getAmzDateString*():string=
-  return format(getGMTime(getTime()), iso_8601_aws)
-
 type
   AwsRequest* = tuple
     action: string
@@ -32,6 +27,11 @@ type
     scope*: AwsScope
     key*: string
     key_expires*: Time
+
+const iso_8601_aws = "yyyyMMdd'T'HHmmss'Z'"
+
+proc getAmzDateString*():string=
+  return format(getGMTime(getTime()), iso_8601_aws)
 
 proc newAwsClient*(credentials:(string,string),region,service:string):AwsClient=
   let
