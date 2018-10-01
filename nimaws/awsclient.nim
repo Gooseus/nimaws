@@ -1,4 +1,4 @@
-#[ 
+#[
   # AwsClient
 
   The core library for building AWS service APIs
@@ -39,7 +39,7 @@ proc newAwsClient*(credentials:(string,string),region,service:string):AwsClient=
     # TODO - use some kind of template and compile-time variable to put the correct kernel used to build the sdk in the UA?
     httpclient = newAsyncHttpClient("nimaws-sdk/0.1.1; "&defUserAgent.replace(" ","-").toLower&"; darwin/16.7.0")
     scope = AwsScope(date:getAmzDateString(),region:region,service:service)
-  
+
   return AwsClient(httpClient:httpclient, credentials:creds, scope:scope,key:"", key_expires:getTime())
 
 proc request*(client:var AwsClient,params:Table):Future[AsyncResponse]=
@@ -47,7 +47,7 @@ proc request*(client:var AwsClient,params:Table):Future[AsyncResponse]=
     action = "GET"
     payload = ""
     path = ""
-    
+
   if params.hasKey("action"):
     action = params["action"]
 
@@ -57,10 +57,21 @@ proc request*(client:var AwsClient,params:Table):Future[AsyncResponse]=
   if params.hasKey("path"):
     path = params["path"]
 
-  let 
-    url = ("https://$1.amazonaws.com/" % client.scope.service) & path
-    req : AwsRequest = (action: action, url: url, payload: payload)
+  let
+    host =  "amazonaws.com"
+    proto = "https"
+  var
+    url:string
+    req:AwsRequest
+    #url = ("https://$1.amazonaws.com/" % client.scope.service) & path
+    #req : AwsRequest = (action: action, url: url, payload: payload)
 
+  if params.hasKey("bucket"):
+    url = ("$1://$2.$3.amazonaws.com" % [proto,params["bucket"],client.scope.service]) & path
+  else:
+    url = ("$1://$2.amazonaws.com" % [proto,client.scope.service]) & path
+  req = (action: action, url: url, payload: payload)
+  echo url
   # Add signing key caching so we can skip a step
   # utilizing some operator overloading on the create_aws_authorization proc.
   # if passed a key and not headers, just return the authorization string; otherwise, create the key and add to the headers
@@ -70,5 +81,6 @@ proc request*(client:var AwsClient,params:Table):Future[AsyncResponse]=
   else:
     let auth = create_aws_authorization(client.credentials[0], client.key, req, client.httpClient.headers.table, client.scope)
     client.httpClient.headers.add("Authorization", auth)
-  
+
+
   return client.httpClient.request(url,action,payload)

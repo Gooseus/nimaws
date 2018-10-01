@@ -11,12 +11,13 @@ if not existsEnv("AWS_ACCESS_ID") or not existsEnv("AWS_ACCESS_SECRET"):
 
 const credentials = (getEnv("AWS_ACCESS_ID"), getEnv("AWS_ACCESS_SECRET"))
 let
-  bucket = "gooseus-nim-api-test"
+  bucket = "tbteroz01"
   path = "/testing/path/test_file.txt"
-  params = { 
-    "path": (bucket&path),
+  params = {
+    "path": path,
+    "bucket": bucket,
     "action": "PUT",
-    "payload": stdin.readAll
+    "payload": "stdin.readAll"
   }.toTable
 
 var client = newAwsClient(credentials,"us-east-1","s3")
@@ -28,6 +29,6 @@ try:
 except HttpRequestError:
   echo "http request error: "
   echo getCurrentExceptionMsg()
-except: 
+except:
   echo "unknown request error: "
   echo getCurrentExceptionMsg()
