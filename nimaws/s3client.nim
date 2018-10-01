@@ -1,4 +1,4 @@
-#[ 
+#[
   # S3Client
 
   A simple object API for performing (limited) S3 operations
@@ -8,7 +8,7 @@ import strutils except toLower
 import times, unicode, tables, asyncdispatch, httpclient
 import awsclient
 
-type 
+type
   S3Client* = object of AwsClient
 
 proc newS3Client*(credentials:(string,string),region:string):S3Client=
@@ -24,21 +24,22 @@ method get_object*(self:var S3Client,bucket,path:string) : Future[AsyncResponse]
   let params = {
       "path": bucket&path
     }.toTable
-  
+
   return self.request(params)
 
 method put_object*(self:var S3Client,bucket,path:string,payload:string) : Future[AsyncResponse] {.base.} =
   let params = {
       "action": "PUT",
-      "path": bucket&path,
+      "bucket": bucket,
+      "path": path,
       "payload": payload
     }.toTable
-  
+
   return self.request(params)
 
 method list_objects*(self:var S3Client, bucket: string) : Future[AsyncResponse] {.base.} =
   let params = {
-      "path": bucket
+      "bucket": bucket
     }.toTable
 
   return self.request(params)

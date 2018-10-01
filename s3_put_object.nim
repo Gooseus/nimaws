@@ -4,7 +4,7 @@
 
 import os, tables, times, math, asyncdispatch, httpclient
 import streams
-import nimaws/awsclient
+import nimaws/s3client
 
 if not existsEnv("AWS_ACCESS_ID") or not existsEnv("AWS_ACCESS_SECRET"):
   quit("No credentials found in environment.")
@@ -20,12 +20,13 @@ let
     "payload": "stdin.readAll"
   }.toTable
 
-var client = newAwsClient(credentials,"us-east-1","s3")
+var client = newS3Client(credentials,"us-west-2")
+
 
 try:
-  let response = waitFor client.request(params)
-  echo waitFor response.body
-  echo "Transfer Complete!\n"
+  var res = waitFor client.put_object(bucket,path,"some bla bla bla")
+  echo waitFor res.body
+  echo "Tranfer completed"
 except HttpRequestError:
   echo "http request error: "
   echo getCurrentExceptionMsg()

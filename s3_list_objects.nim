@@ -9,9 +9,9 @@ if not existsEnv("AWS_ACCESS_ID") or not existsEnv("AWS_ACCESS_SECRET"):
   quit("No credentials found in environment.")
 
 const credentials = (getEnv("AWS_ACCESS_ID"), getEnv("AWS_ACCESS_SECRET"))
-let bucket = "tbteroz01/"
+let bucket = "tbteroz01"
 
-var client = newS3Client(credentials,"us-east-1")
+var client = newS3Client(credentials,"us-west-2")
 
 try:
   let res = waitFor client.list_objects(bucket)

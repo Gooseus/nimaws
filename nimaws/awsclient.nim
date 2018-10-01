@@ -57,21 +57,30 @@ proc request*(client:var AwsClient,params:Table):Future[AsyncResponse]=
   if params.hasKey("path"):
     path = params["path"]
 
-  let
-    host =  "amazonaws.com"
-    proto = "https"
+  discard """ let
+    url = ("https://$1.amazonaws.com/" % client.scope.service) & path
+    req : AwsRequest = (action: action, url: url, payload: payload)
+
+  # Add signing key caching so we can skip a step
+  # utilizing some operator overloading on the create_aws_authorization proc.
+  # if passed a key and not headers, just return the authorization string; otherwise, create the key and add to the headers
+  if client.key_expires <= getTime():
+    client.key = create_aws_authorization(client.credentials, req, client.httpClient.headers.table, client.scope)
+    client.key_expires = getTime() + initInterval(days=7)
+  else:
+    let auth = create_aws_authorization(client.credentials[0], client.key, req, client.httpClient.headers.table, client.scope)
+    client.httpClient.headers.add("Authorization", auth)
+ """
   var
     url:string
-    req:AwsRequest
-    #url = ("https://$1.amazonaws.com/" % client.scope.service) & path
-    #req : AwsRequest = (action: action, url: url, payload: payload)
 
   if params.hasKey("bucket"):
-    url = ("$1://$2.$3.amazonaws.com" % [proto,params["bucket"],client.scope.service]) & path
+     url = ("https://$1.$2.amazonaws.com/" % [params["bucket"],client.scope.service]) & path
   else:
-    url = ("$1://$2.amazonaws.com" % [proto,client.scope.service]) & path
-  req = (action: action, url: url, payload: payload)
-  echo url
+     url = ("https://$1.amazonaws.com/" % client.scope.service) & path
+  let
+     req:AwsRequest = (action: action, url: url, payload: payload)
+
   # Add signing key caching so we can skip a step
   # utilizing some operator overloading on the create_aws_authorization proc.
   # if passed a key and not headers, just return the authorization string; otherwise, create the key and add to the headers
@@ -83,4 +92,6 @@ proc request*(client:var AwsClient,params:Table):Future[AsyncResponse]=
     client.httpClient.headers.add("Authorization", auth)
 
 
+
+  echo url
   return client.httpClient.request(url,action,payload)
