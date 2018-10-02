@@ -25,7 +25,7 @@ var client = newS3Client(credentials,"us-west-2")
 
 try:
   var res = waitFor client.put_object(bucket,path,"some bla bla bla")
-  echo waitFor res.body
+  echo  res.status
   echo "Tranfer completed"
 except HttpRequestError:
   echo "http request error: "

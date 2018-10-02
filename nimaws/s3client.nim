@@ -5,11 +5,12 @@
  ]#
 
 import strutils except toLower
-import times, unicode, tables, asyncdispatch, httpclient
+import times, unicode, tables, asyncdispatch, httpclient,streams,os
 import awsclient
 
 type
   S3Client* = object of AwsClient
+
 
 proc newS3Client*(credentials:(string,string),region:string):S3Client=
   let
@@ -36,6 +37,21 @@ method put_object*(self:var S3Client,bucket,path:string,payload:string) : Future
     }.toTable
 
   return self.request(params)
+
+method put_file*(self:var S3Client,bucket:string,path:string,filename:string):bool =
+  var payload:string
+  let params = {
+      "action": "PUT",
+      "bucket": bucket,
+      "path": path,
+      "payload": payload
+    }.toTable
+  if fileExists(filename):
+      payload = readFile(filename)
+  else:
+      raise newException(Exception,"File no found: " & filename);
+  var res = self.request(params)
+
 
 method list_objects*(self:var S3Client, bucket: string) : Future[AsyncResponse] {.base.} =
   let params = {
