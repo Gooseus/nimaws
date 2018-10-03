@@ -12,7 +12,7 @@ if not existsEnv("AWS_ACCESS_ID") or not existsEnv("AWS_ACCESS_SECRET"):
 const credentials = (getEnv("AWS_ACCESS_ID"), getEnv("AWS_ACCESS_SECRET"))
 let
   bucket = "tbteroz01"
-  path = "/testing/path/test_file.txt"
+  path = "tests/test_file.txt"
   params = {
     "path": path,
     "bucket": bucket,

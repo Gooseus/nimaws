@@ -5,8 +5,9 @@
  ]#
 
 import strutils except toLower
-import times, unicode, tables, asyncdispatch, httpclient,streams,os
+import times, unicode, tables, asyncdispatch, httpclient,streams,os,strutils
 import awsclient
+
 
 type
   S3Client* = object of AwsClient
@@ -21,12 +22,21 @@ proc newS3Client*(credentials:(string,string),region:string):S3Client=
 
   return S3Client(httpClient:httpclient, credentials:creds, scope:scope, key:"", key_expires:getTime())
 
-method get_object*(self:var S3Client,bucket,path:string) : Future[AsyncResponse] {.base.} =
+method get_object*(self:var S3Client,bucket,key:string) : Future[AsyncResponse] {.base.} =
+  var
+    path = key
+  path.removePrefix({'/'})
   let params = {
-      "path": bucket&path
-    }.toTable
+        "bucket":bucket,
+        "path": path
+      }.toTable
 
   return self.request(params)
+
+method get_file*(self:var S3Client,bucket,key,filename:string):Future[bool]{.async,base.} =
+  var
+    client:S3Client = self
+  var res =  waitFor client.get_object(bucket,key)
 
 method put_object*(self:var S3Client,bucket,path:string,payload:string) : Future[AsyncResponse] {.base.} =
   let params = {
@@ -38,20 +48,24 @@ method put_object*(self:var S3Client,bucket,path:string,payload:string) : Future
 
   return self.request(params)
 
-method put_file*(self:var S3Client,bucket:string,path:string,filename:string):bool =
-  var payload:string
+method put_file*(self:var S3Client,bucket:string,key:string,filename:string):Future[AsyncResponse]{.base.} =
+  var
+    payload:string
+    path = key
+
+  if fileExists(filename):
+      payload = readFile(filename)
+  else:
+      raise newException(Exception,"File no found: " & filename);
+
+  path.removePrefix({'/'})
   let params = {
       "action": "PUT",
       "bucket": bucket,
       "path": path,
       "payload": payload
-    }.toTable
-  if fileExists(filename):
-      payload = readFile(filename)
-  else:
-      raise newException(Exception,"File no found: " & filename);
-  var res = self.request(params)
-
+  }.toTable
+  return self.request(params)
 
 method list_objects*(self:var S3Client, bucket: string) : Future[AsyncResponse] {.base.} =
   let params = {
