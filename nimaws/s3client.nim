@@ -33,10 +33,10 @@ method get_object*(self:var S3Client,bucket,key:string) : Future[AsyncResponse] 
 
   return self.request(params)
 
-method get_file*(self:var S3Client,bucket,key,filename:string):Future[bool]{.async,base.} =
+discard """ method get_file*(self:var S3Client,bucket,key,filename:string):Future[bool]{.async,base.} =
   var
     client:S3Client = self
-  var res =  waitFor client.get_object(bucket,key)
+  var res =  waitFor client.get_object(bucket,key) """
 
 method put_object*(self:var S3Client,bucket,path:string,payload:string) : Future[AsyncResponse] {.base.} =
   let params = {
@@ -46,25 +46,6 @@ method put_object*(self:var S3Client,bucket,path:string,payload:string) : Future
       "payload": payload
     }.toTable
 
-  return self.request(params)
-
-method put_file*(self:var S3Client,bucket:string,key:string,filename:string):Future[AsyncResponse]{.base.} =
-  var
-    payload:string
-    path = key
-
-  if fileExists(filename):
-      payload = readFile(filename)
-  else:
-      raise newException(Exception,"File no found: " & filename);
-
-  path.removePrefix({'/'})
-  let params = {
-      "action": "PUT",
-      "bucket": bucket,
-      "path": path,
-      "payload": payload
-  }.toTable
   return self.request(params)
 
 method list_objects*(self:var S3Client, bucket: string) : Future[AsyncResponse] {.base.} =
