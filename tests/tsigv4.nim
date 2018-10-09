@@ -33,8 +33,8 @@ bb579772317eb040ac9ed261061d46c1f17a8133879d6129b6e1c25292927e63
     X-Amz-Date:20150830T123600Z
     Authorization: AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20150830/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-date, Signature=5fa00fa31553b73ebf1942676e86291e8372ff2a2260956d9b8aae1d763fbf31
  ]#
-import nimaws/sigv4
-import tables
+import tables,unittest
+import sigv4
 
 type
   Test = tuple
@@ -51,13 +51,13 @@ x-amz-date:20150830T123600Z
 
 host;x-amz-date
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855""",
-    """AWS4-HMAC-SHA256
+"""AWS4-HMAC-SHA256
 20150830T123600Z
 20150830/us-east-1/service/aws4_request
 bb579772317eb040ac9ed261061d46c1f17a8133879d6129b6e1c25292927e63""",
-    "5fa00fa31553b73ebf1942676e86291e8372ff2a2260956d9b8aae1d763fbf31",
-    "AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20150830/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-date, Signature=5fa00fa31553b73ebf1942676e86291e8372ff2a2260956d9b8aae1d763fbf31"
-  )
+"5fa00fa31553b73ebf1942676e86291e8372ff2a2260956d9b8aae1d763fbf31",
+"AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20150830/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-date, Signature=5fa00fa31553b73ebf1942676e86291e8372ff2a2260956d9b8aae1d763fbf31"
+)
 
 const
   # All tests
@@ -74,28 +74,28 @@ var
   payload = ""
 
 var
-  headers = { "X-Amz-Date": date }.newTable
-  scope:AwsScope = AwsScope(date:date[0..7], region:region, service:service)
+  headers = { "X-Amz-Date": @[date] }.newTable
+  scope:AwsScope = AwsScope(date:date, region:region, service:service)
   signed_head:string
   canonical_request:string
 
-#(signed_head,canonical_request) = create_canonical_request(headers, meth, url, payload, false, false)
+(signed_head,canonical_request) = create_canonical_request(headers, meth, url, payload,false, false)
 
-discard """ let
-  to_sign = create_string_to_sign(date,scope,canonical_request)
-  signing_key = create_signing_key(credentials.secret,date,region,service)
-  signature = create_sigv4(signing_key, to_sign)
-  authorization = create_aws_authorization(credentials.id,scope,signed_head,signature)
+let
+  to_sign = create_string_to_sign(scope,canonical_request)
+  signing_key = create_signing_key(credentials.secret,scope)
+  signature = create_signature(signing_key,to_sign)
+  authorization = create_authorization_header(credentials.id,scope,signed_head,signature)
 
-try:
-  assert(canonical_request==test_vanilla_get.c_request, "Canonical Request Incorrect.")
-  assert(test_vanilla_get.to_sign==to_sign, "String to Sign Incorrect.")
-  assert(signature==test_vanilla_get.signature, "Signature Incorrect.")
-  assert(authorization==test_vanilla_get.authorization, "Authorization Incorrect.")
-except AssertionError:
-  quit("Test failed: " & getCurrentExceptionMsg())
-except:
-  quit("Unknown testing error: " & getCurrentExceptionMsg())
- """
+suite "sig4 tests":
+  test "String to Sign":
+    assert(test_vanilla_get.to_sign==to_sign, "String to Sign Incorrect.")
+  test "Canonical Request":
+    assert(canonical_request==test_vanilla_get.c_request, "Canonical Request Incorrect.")
+  test "Signature":
+    assert test_vanilla_get.signature == signature
+  test "Authorization":
+    assert(authorization==test_vanilla_get.authorization)
+
 echo "Tests passed!"
 

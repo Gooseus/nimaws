@@ -1,6 +1,6 @@
 import unittest,os,asyncdispatch,httpclient,md5,osproc,strutils
 
-import nimaws/s3client
+import s3client
 
 suite "Test s3Client":
   var
@@ -20,7 +20,6 @@ suite "Test s3Client":
   test "List Buckets":
 
     let res = waitFor client.list_objects(bucket)
-    echo waitFor res.body
     assert res.status == "200 OK"
 
   test "Put Object":
@@ -40,5 +39,7 @@ suite "Test s3Client":
 
     let res = waitFor client.get_object(bucket, path)
     assert md5sum.find(getMD5(waitFor res.body)) > -1
+
+
 
 
