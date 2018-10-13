@@ -13,14 +13,14 @@ type
   S3Client* = object of AwsClient
 
 
-proc newS3Client*(credentials:(string,string),region:string):S3Client=
+proc newS3Client*(credentials:(string,string),region:string,endpoint:string="amazonaws.com"):S3Client=
   let
     creds = AwsCredentials(credentials)
     # TODO - use some kind of template and compile-time variable to put the correct kernel used to build the sdk in the UA?
     httpclient = newAsyncHttpClient("nimaws-sdk/0.1.1; "&defUserAgent.replace(" ","-").toLower&"; darwin/16.7.0")
     scope = AwsScope(date:getAmzDateString(),region:region,service:"s3")
 
-  return S3Client(httpClient:httpclient, credentials:creds, scope:scope, key:"", key_expires:getTime())
+  return S3Client(httpClient:httpclient, credentials:creds, scope:scope, endpoint:endpoint,key:"", key_expires:getTime())
 
 method get_object*(self:var S3Client,bucket,key:string) : Future[AsyncResponse] {.base.} =
   var

@@ -6,7 +6,9 @@ echo "erer"
 
 suite "Test minio Endpoint":
 
-  when existsEnv("MINIO_ACCESS_ID") and existsEnv("MINIO_ACCESS_SECRET"):
+  when not existsEnv("MINIO_ACCESS_ID") and not existsEnv("MINIO_ACCESS_SECRET"):
+    echo "NO MINIO ENV set"
+  else:
     var
       bucket = "tbteroz01"
       passwd = findExe("passwd")
@@ -15,13 +17,14 @@ suite "Test minio Endpoint":
 
 
     const credentials = (getEnv("MINIO_ACCESS_ID"), getEnv("MINIO_ACCESS_SECRET"))
-    client = newMinioClient(credentials,"http://localhost:9000")
+    client = newS3Client(credentials,"us-east-1","http://localhost:9000")
 
+    echo credentials
 
     test "List Buckets":
 
       let res = waitFor client.list_buckets
-      echo res.status
+      assert res.code == Http200
       echo waitFor res.body
 
     discard """ test "Put Object":

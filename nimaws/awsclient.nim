@@ -25,6 +25,8 @@ type
     httpClient*: AsyncHttpClient
     credentials*: AwsCredentials
     scope*: AwsScope
+    endpoint*:string
+    isAWS*:bool
     key*: string
     key_expires*: Time
 
@@ -57,30 +59,17 @@ proc request*(client:var AwsClient,params:Table):Future[AsyncResponse]=
   if params.hasKey("path"):
     path = params["path"]
 
-  discard """ let
-    url = ("https://$1.amazonaws.com/" % client.scope.service) & path
-    req : AwsRequest = (action: action, url: url, payload: payload)
-
-  # Add signing key caching so we can skip a step
-  # utilizing some operator overloading on the create_aws_authorization proc.
-  # if passed a key and not headers, just return the authorization string; otherwise, create the key and add to the headers
-  if client.key_expires <= getTime():
-    client.key = create_aws_authorization(client.credentials, req, client.httpClient.headers.table, client.scope)
-    client.key_expires = getTime() + initInterval(days=7)
-  else:
-    let auth = create_aws_authorization(client.credentials[0], client.key, req, client.httpClient.headers.table, client.scope)
-    client.httpClient.headers.add("Authorization", auth)
- """
   var
     url:string
 
   if params.hasKey("bucket"):
      url = ("https://$1.$2.amazonaws.com/" % [params["bucket"],client.scope.service]) & path
   else:
-     url = ("https://$1.amazonaws.com/" % client.scope.service) & path
+     #url = ("https://$1.$2/" % [client.scope.service,client.endpoint]) & path
+     url = ("$1/" % [client.endpoint]) & path
   let
      req:AwsRequest = (action: action, url: url, payload: payload)
-
+  echo url
   # Add signing key caching so we can skip a step
   # utilizing some operator overloading on the create_aws_authorization proc.
   # if passed a key and not headers, just return the authorization string; otherwise, create the key and add to the headers

@@ -80,7 +80,6 @@ var
   canonical_request:string
 
 (signed_head,canonical_request) = create_canonical_request(headers, meth, url, payload,false, false)
-
 let
   to_sign = create_string_to_sign(scope,canonical_request)
   signing_key = create_signing_key(credentials.secret,scope)
@@ -89,13 +88,12 @@ let
 
 suite "sig4 tests":
   test "String to Sign":
-    assert(test_vanilla_get.to_sign==to_sign, "String to Sign Incorrect.")
+    assert(test_vanilla_get.to_sign==to_sign)
   test "Canonical Request":
-    assert(canonical_request==test_vanilla_get.c_request, "Canonical Request Incorrect.")
+    assert(canonical_request==test_vanilla_get.c_request)
   test "Signature":
     assert test_vanilla_get.signature == signature
   test "Authorization":
     assert(authorization==test_vanilla_get.authorization)
 
 echo "Tests passed!"
-

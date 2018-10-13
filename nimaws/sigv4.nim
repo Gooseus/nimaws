@@ -118,7 +118,7 @@ proc create_canonical_and_signed_headers(headers: TableRef): (string, string) =
 # create the canonical request string
 # http://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
 proc create_canonical_request*(headers: var TableRef, action: string, url: string, payload: string="", unsignedPayload:bool=true, contentSha:bool=true): (string,string)=
-  let 
+  let
     uri = parseUri(url)
     cpath = create_canonical_path(uri.path)
     cquery = create_canonical_qs(uri.query)
@@ -129,7 +129,10 @@ proc create_canonical_request*(headers: var TableRef, action: string, url: strin
     hashload = !$payload
 
   # add the host header for signing, will remove later so we don't have 2
-  headers["Host"] = @[uri.hostname]
+  if uri.port.len > 0:
+    headers["Host"] = @["$1:$2" % [uri.hostname,uri.port]]
+  else:
+    headers["Host"] = @[uri.hostname]
   # sometimes we don't want/need this, like for the AWS test suite
   if contentSha:
     headers["X-Amz-Content-Sha256"] = @[hashload]
@@ -168,7 +171,7 @@ proc create_aws_authorization*(id:string,
 
   # create signed headers and canonical request string
   # http://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
-  let (signed_head, canonical_request) = create_canonical_request(headers, request[0], request[1], request[2],unsignedPayload=false)
+  let (signed_head, canonical_request) = create_canonical_request(headers, request[0], request[1], request[2],unsignedPayload=false,true)
   # delete host header since it's added by the the httpclient.request later and having 2 Host headers is Forbidden
   headers.del("Host")
 
