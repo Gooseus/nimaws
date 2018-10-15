@@ -15,12 +15,18 @@ suite "Test s3Client":
       quit("No credentials found in environment.")
 
   const credentials = (getEnv("AWS_ACCESS_ID"), getEnv("AWS_ACCESS_SECRET"))
-  client = newS3Client(credentials,"us-west-2")
+  client = newS3Client(credentials)
 
   test "List Buckets":
 
+    let res = waitFor client.list_buckets()
+    assert res.code == Http200
+
+  test "List Objects":
+    client = newS3Client(credentials,region)
+    client.httpClient.headers.clear()
     let res = waitFor client.list_objects(bucket)
-    assert res.status == "200 OK"
+    assert res.code == Http200
 
   test "Put Object":
     client.httpClient.headers.clear()
@@ -29,7 +35,7 @@ suite "Test s3Client":
       payload = if fileExists(passwd): readFile(passwd) else: "some file content\nbla bla bla"
       res = waitFor client.put_object(bucket,path,payload)
 
-    assert res.status == "200 OK"
+    assert res.code == Http200
 
   test "Get Object":
     client.httpClient.headers.clear()
@@ -38,6 +44,7 @@ suite "Test s3Client":
       f: File
 
     let res = waitFor client.get_object(bucket, path)
+    assert res.code == Http200
     assert md5sum.find(getMD5(waitFor res.body)) > -1
 
 

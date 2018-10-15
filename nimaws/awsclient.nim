@@ -8,13 +8,16 @@
     * a request proc which takes an AwsClient and the request params to handle Sigv4 signing and async dispatch
  ]#
 
-import times, tables, unicode
+import times, tables, unicode,uri
 import strutils except toLower
 import httpclient, asyncdispatch
 import sigv4
 
 export sigv4.AwsCredentials, sigv4.AwsScope
 
+const
+  awsEndpt* = "https://amazonaws.com"
+  defRegion* = "us-east-1"
 type
   AwsRequest* = tuple
     action: string
@@ -25,7 +28,7 @@ type
     httpClient*: AsyncHttpClient
     credentials*: AwsCredentials
     scope*: AwsScope
-    endpoint*:string
+    endpoint*:Uri
     isAWS*:bool
     key*: string
     key_expires*: Time
@@ -62,11 +65,18 @@ proc request*(client:var AwsClient,params:Table):Future[AsyncResponse]=
   var
     url:string
 
-  if params.hasKey("bucket"):
-     url = ("https://$1.$2.amazonaws.com/" % [params["bucket"],client.scope.service]) & path
+  if client.isAws:
+    if params.hasKey("bucket"):
+      url = ("https://$1.$2.amazonaws.com/" % [params["bucket"],client.scope.service]) & path
+    else:
+      url = ("https://$1.amazonaws.com/" % [client.scope.service]) & path
   else:
-     #url = ("https://$1.$2/" % [client.scope.service,client.endpoint]) & path
-     url = ("$1/" % [client.endpoint]) & path
+     var
+        bucket = if params.hasKey("bucket"): params["bucket"] else: ""
+     if client.endpoint.port.len > 0 and client.endpoint.port != "80":
+        url = ("$1://$2:$3/" % [client.endpoint.scheme,client.endpoint.hostname,client.endpoint.port])&bucket&path
+     else:
+        url = ("$1://$2/$3" % [client.endpoint.scheme,client.endpoint.hostname])& bucket&path
   let
      req:AwsRequest = (action: action, url: url, payload: payload)
   echo url
