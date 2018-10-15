@@ -67,7 +67,7 @@ string_to_sign() {
 }
 
 signature_key() {
-  local secret=$(printf "AWS4${AWS_SECRET_ACCESS_KEY?}" | hex_key)
+  local secret=$(printf "AWS4${MINIO_ACCESS_SECRET}" | hex_key)
   local date_key=$(printf ${date_scope} | hmac_sha256 "${secret}" | hex_key)
   local region_key=$(printf ${region} | hmac_sha256 "${date_key}" | hex_key)
   local service_key=$(printf "s3" | hmac_sha256 "${region_key}" | hex_key)
@@ -90,9 +90,9 @@ signature() {
 curl \
   -v\
   -T "${file}" \
-  -H "Authorization: AWS4-HMAC-SHA256 Credential=${AWS_ACCESS_KEY_ID?}/${date_scope}/${region}/s3/aws4_request,SignedHeaders=${signed_headers},Signature=$(signature)" \
+  -H "Authorization: AWS4-HMAC-SHA256 Credential=${MINIO_ACCESS_ID?}/${date_scope}/${region}/s3/aws4_request,SignedHeaders=${signed_headers},Signature=$(signature)" \
   -H "Date: ${date_header}" \
   -H "x-amz-acl: public-read" \
   -H "x-amz-content-sha256: $(payload_hash)" \
   -H "x-amz-date: ${iso_timestamp}" \
-  "http://sandbox.6lines.com:9000/${bucket}/${prefix}/${file}"
+  "http://localhost:9000/${bucket}/${prefix}/${file}"
