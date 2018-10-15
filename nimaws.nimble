@@ -7,7 +7,7 @@ license       = "MIT"
 
 # Dependencies
 
-requires "nim >= 0.19.0", "hmac >= 0.1.4"
+requires "nim >= 0.18.1", "hmac >= 0.1.4"
 
 # Skips
 
