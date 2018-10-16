@@ -5,13 +5,14 @@ A collection of nim modules for integrating with AWS.  Hardly a full SDK by any 
 ## Current Status
 
 Very much a work in progress.  Sigv4 hasn't been tested extensively and so it'll certainly fail for certain requests.  Successfully tested simple S3 GETs and PUTs without any querystrings or complicated header parameters.
+It has also been tested on [minio](https://minio.io) which is a s3 compatible storage solution (see tests/tminio).
 
 **Note:** This is my second project with the Nim language, so there are may be some anti-patterns and non-idiomatic styles, all feedback and advice is welcome.
 
 ### Todo
 
-* Fix the one test written (sigv4_test.nim)
-* Write tests for `tests/aws-sig-v4-test-suite/*`
+* ~~Fix the one test written (sigv4_test.nim)~~
+* ~~Write tests for `tests/aws-sig-v4-test-suite/*`~~
 * Path normalization in sigv4
 * Generate or write more service specific modules from API definitions
 * Make more examples for other common AWS tasks
@@ -19,7 +20,11 @@ Very much a work in progress.  Sigv4 hasn't been tested extensively and so it'll
 
 ### Install with Nimble
 
-`$ nimble install nimaws`
+`$ nimble install https://github.com/Gooseus/nimaws`
+
+### Run tests
+
+`$ nimble test`
 
 ## Modules
 
@@ -95,7 +100,7 @@ import nimaws/s3client
 
 #### type S3Client* = object of AwsClient
 
-#### proc newS3Client\*(credentials,region)
+#### proc newS3Client\*(credentials,region,endpoint)
 
 Return a S3Client object configured with the credentials and scope.  The S3Client object inherits from AwsClient
 
@@ -109,7 +114,7 @@ Puts an object into an S3 bucket.
 
 #### method list_objects\*(self,bucket)
 
-List the objects in an S3 bucket. 
+List the objects in an S3 bucket.
 
 #### method list_buckets\*(self)
 
@@ -143,6 +148,7 @@ $ cd nimaws
 $ export AWS_ACCESS_ID="Your access id"
 $ export AWS_ACCESS_SECRET="Your access secret"
 $
+$ cd src/private/
 $ vi s3_put_object.nim
 ... change bucket value...:wq
 $ nim -c -d:ssl s3_put_object.nim

@@ -4,30 +4,29 @@
 
 import os, tables, times, math, asyncdispatch, httpclient
 import streams
-import nimaws/awsclient
+import ../s3client
 
 if not existsEnv("AWS_ACCESS_ID") or not existsEnv("AWS_ACCESS_SECRET"):
   quit("No credentials found in environment.")
 
 const credentials = (getEnv("AWS_ACCESS_ID"), getEnv("AWS_ACCESS_SECRET"))
-let
-  bucket = "gooseus-nim-api-test"
-  path = "/testing/path/test_file.txt"
-  params = { 
-    "path": (bucket&path),
-    "action": "PUT",
-    "payload": stdin.readAll
-  }.toTable
 
-var client = newAwsClient(credentials,"us-east-1","s3")
+let
+  bucket = "tbteroz01"
+  path = "files/s3_put_object"
+  filename = "s3_put_object"
+  payload = if fileExists(filename): readFile(filename) else: "some file content/bla bla bla"
+
+var client = newS3Client(credentials,"us-west-2")
+
 
 try:
-  let response = waitFor client.request(params)
-  echo waitFor response.body
-  echo "Transfer Complete!\n"
+  var res = waitFor client.put_object(bucket,path,payload)
+  echo  res.status
+  echo "Tranfer completed"
 except HttpRequestError:
   echo "http request error: "
   echo getCurrentExceptionMsg()
-except: 
+except:
   echo "unknown request error: "
   echo getCurrentExceptionMsg()
