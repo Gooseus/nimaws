@@ -1,6 +1,6 @@
 import unittest,os,asyncdispatch,httpclient,md5,osproc,strutils
 
-import s3client
+import nimaws/s3client
 
 suite "Test Minio Endpoint":
 

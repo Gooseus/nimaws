@@ -4,7 +4,7 @@
 
 import os, tables, times, math, asyncdispatch, httpclient
 import streams
-import nimaws/s3client
+import ../s3client
 
 if not existsEnv("AWS_ACCESS_ID") or not existsEnv("AWS_ACCESS_SECRET"):
   quit("No credentials found in environment.")
