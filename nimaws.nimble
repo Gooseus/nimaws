@@ -1,9 +1,17 @@
 # Package
 
-version       = "0.2.2"
+version       = "0.2.3"
 author        = "Gooseus"
 description   = "Simple modules for working with AWS"
 license       = "MIT"
+srcDir        = "nimaws"
+
+# Dependencies
+
+requires "nim >= 0.18.1"
+
+
+
 
 # Dependencies
 
