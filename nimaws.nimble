@@ -1,10 +1,10 @@
 # Package
 
-version       = "0.2.4"
+version       = "0.2.5"
 author        = "Gooseus"
 description   = "Simple modules for working with AWS"
 license       = "MIT"
-srcDir        = "nimaws"
+srcDir        = "src"
 
 # Dependencies
 
