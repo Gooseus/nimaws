@@ -20,7 +20,7 @@ It has also been tested on [minio](https://minio.io) which is a s3 compatible st
 
 ### Install with Nimble
 
-`$ nimble install nimaws`
+`$ nimble install https://github.com/Gooseus/nimaws`
 
 ### Run tests
 
@@ -100,7 +100,7 @@ import nimaws/s3client
 
 #### type S3Client* = object of AwsClient
 
-#### proc newS3Client\*(credentials,region)
+#### proc newS3Client\*(credentials,region,endpoint)
 
 Return a S3Client object configured with the credentials and scope.  The S3Client object inherits from AwsClient
 
@@ -148,6 +148,7 @@ $ cd nimaws
 $ export AWS_ACCESS_ID="Your access id"
 $ export AWS_ACCESS_SECRET="Your access secret"
 $
+$ cd src/private/
 $ vi s3_put_object.nim
 ... change bucket value...:wq
 $ nim -c -d:ssl s3_put_object.nim
