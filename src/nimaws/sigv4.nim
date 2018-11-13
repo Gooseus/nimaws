@@ -7,7 +7,8 @@
 import os, times
 import strutils except toLower
 import sequtils, algorithm, tables, nimSHA2
-import securehash, hmac, base64, re, unicode
+import securehash, hmac, base64, re
+import unicode except strip
 from uri import parseUri
 
 
