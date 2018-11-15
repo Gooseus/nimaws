@@ -68,6 +68,7 @@ proc request*(client:var AwsClient,params:Table):Future[AsyncResponse]=
 
   if client.credentials.id.len == 0 or client.credentials.secret.len == 0:
     raise newException(EAWSCredsMissing,"Missing credentails id/secret pair")
+
   if client.isAws:
     if params.hasKey("bucket"):
       url = ("https://$1.$2.amazonaws.com/" % [params["bucket"],client.scope.service]) & path
