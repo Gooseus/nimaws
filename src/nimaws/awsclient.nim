@@ -19,6 +19,7 @@ const
   awsEndpt* = "https://amazonaws.com"
   defRegion* = "us-east-1"
 type
+  EAWSCredsMissing = object of Exception
   AwsRequest* = tuple
     action: string
     url: string
@@ -65,6 +66,8 @@ proc request*(client:var AwsClient,params:Table):Future[AsyncResponse]=
   var
     url:string
 
+  if client.credentials.id.len == 0 or client.credentials.secret.len == 0:
+    raise newException(EAWSCredsMissing,"Missing credentails id/secret pair")
   if client.isAws:
     if params.hasKey("bucket"):
       url = ("https://$1.$2.amazonaws.com/" % [params["bucket"],client.scope.service]) & path

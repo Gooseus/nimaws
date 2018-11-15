@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.2.6"
+version       = "0.2.7"
 author        = "Gooseus"
 description   = "Simple modules for working with AWS"
 license       = "MIT"
