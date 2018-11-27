@@ -89,8 +89,9 @@ proc request*(client:var AwsClient,params:Table):Future[AsyncResponse]=
   # if passed a key and not headers, just return the authorization string; otherwise, create the key and add to the headers
   client.httpClient.headers.clear()
   if client.key_expires <= getTime():
+    echo "new key created"
     client.key = create_aws_authorization(client.credentials, req, client.httpClient.headers.table, client.scope)
-    client.key_expires = getTime() + initInterval(days=7)
+    client.key_expires = getTime() + initInterval(minutes=30)
   else:
     let auth = create_aws_authorization(client.credentials[0], client.key, req, client.httpClient.headers.table, client.scope)
     client.httpClient.headers.add("Authorization", auth)
