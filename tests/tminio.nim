@@ -5,17 +5,19 @@ import nimaws/s3client
 suite "Test Minio Endpoint":
 
   when not existsEnv("MINIO_ACCESS_ID") and not existsEnv("MINIO_ACCESS_SECRET"):
-    echo "NO MINIO ENV set"
+    echo "To test a minio endpoint export MINIO_ACCESS_ID and MINIO_ACCESS_SECRET and optionally MINIO_ENDPOINT if not the default http://localhost:9000"
   else:
     var
-      bucket = "tbteroz01"
+      bucket = "sandbox01"
       passwd = findExe("passwd")
       client:S3Client
       md5sum = execProcess("md5sum " & passwd)
 
 
     const credentials = (getEnv("MINIO_ACCESS_ID"), getEnv("MINIO_ACCESS_SECRET"))
-    client = newS3Client(credentials,"local","http://localhost:9000")
+    const endpoint = getEnv("MINIO_ENDPOINT")
+    const host = if endpoint.len == 0: "http://localhost:9000" else: endpoint
+    client = newS3Client(credentials,"local",host)
 
 
     test "List Buckets":
@@ -25,6 +27,7 @@ suite "Test Minio Endpoint":
 
     test "List Objects":
       let res = waitFor client.list_objects(bucket)
+      echo waitFor res.body
       assert res.code == Http200
 
     test "Put Object":

@@ -19,6 +19,7 @@ const
   awsEndpt* = "https://amazonaws.com"
   defRegion* = "us-east-1"
 type
+  EAWSCredsMissing = object of Exception
   AwsRequest* = tuple
     action: string
     url: string
@@ -65,6 +66,9 @@ proc request*(client:var AwsClient,params:Table):Future[AsyncResponse]=
   var
     url:string
 
+  if client.credentials.id.len == 0 or client.credentials.secret.len == 0:
+    raise newException(EAWSCredsMissing,"Missing credentails id/secret pair")
+
   if client.isAws:
     if params.hasKey("bucket"):
       url = ("https://$1.$2.amazonaws.com/" % [params["bucket"],client.scope.service]) & path
@@ -85,8 +89,9 @@ proc request*(client:var AwsClient,params:Table):Future[AsyncResponse]=
   # if passed a key and not headers, just return the authorization string; otherwise, create the key and add to the headers
   client.httpClient.headers.clear()
   if client.key_expires <= getTime():
+    client.scope.date = getAmzDateString()
     client.key = create_aws_authorization(client.credentials, req, client.httpClient.headers.table, client.scope)
-    client.key_expires = getTime() + initInterval(days=7)
+    client.key_expires = getTime() + initInterval(minutes=5)
   else:
     let auth = create_aws_authorization(client.credentials[0], client.key, req, client.httpClient.headers.table, client.scope)
     client.httpClient.headers.add("Authorization", auth)
