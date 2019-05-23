@@ -12,14 +12,18 @@ import awsclient
 type
   S3Client* = object of AwsClient
 
-proc newS3Client*(credentials:(string,string),region:string=defRegion,endpoint:string=awsEndpt):S3Client=
+proc newS3Client*(credentials:(string,string),region:string=defRegion,host:string=awsEndpt):S3Client=
   let
     creds = AwsCredentials(credentials)
     # TODO - use some kind of template and compile-time variable to put the correct kernel used to build the sdk in the UA?
     httpclient = newAsyncHttpClient("nimaws-sdk/0.1.1; "&defUserAgent.replace(" ","-").toLower&"; darwin/16.7.0")
     scope = AwsScope(date:getAmzDateString(),region:region,service:"s3")
-
-  return S3Client(httpClient:httpclient, credentials:creds, scope:scope, endpoint:parseUri(endpoint),isAWS:endpoint==awsEndpt,key:"", key_expires:getTime())
+  var endpoint:string
+  if not host.startsWith("http"): 
+    endpoint = "https://" & host
+  else:
+    endpoint = host
+  return S3Client(httpClient:httpclient, credentials:creds, scope:scope, endpoint:parseUri(endpoint),isAWS:endpoint.endsWith(awsEndpt),key:"", key_expires:getTime())
 
 method get_object*(self:var S3Client,bucket,key:string) : Future[AsyncResponse] {.base.} =
   var
@@ -31,12 +35,12 @@ method get_object*(self:var S3Client,bucket,key:string) : Future[AsyncResponse] 
 
   return self.request(params)
 
-discard """ method get_file*(self:var S3Client,bucket,key,filename:string):Future[bool]{.async,base.} =
-  var
-    client:S3Client = self
-  var res =  waitFor client.get_object(bucket,key) """
-
-method put_object*(self:var S3Client,bucket,path:string,payload:string) : Future[AsyncResponse] {.base.} =
+#
+## put_object
+##  bucket name
+##  path has to be absoloute path in the form /path/to/file
+##  payload is binary string
+method put_object*(self:var S3Client,bucket,path:string,payload:string) : Future[AsyncResponse] {.base,gcsafe.} =
   let params = {
       "action": "PUT",
       "bucket": bucket,
@@ -46,14 +50,14 @@ method put_object*(self:var S3Client,bucket,path:string,payload:string) : Future
 
   return self.request(params)
 
-method list_objects*(self:var S3Client, bucket: string) : Future[AsyncResponse] {.base.} =
+method list_objects*(self:var S3Client, bucket: string) : Future[AsyncResponse] {.base,gcsafe.} =
   let params = {
       "bucket": bucket
     }.toTable
 
   return self.request(params)
 
-method list_buckets*(self:var S3Client) : Future[AsyncResponse] {.base.} =
+method list_buckets*(self:var S3Client) : Future[AsyncResponse] {.base,gcsafe.} =
   let params = {
       "action": "GET"
     }.toTable

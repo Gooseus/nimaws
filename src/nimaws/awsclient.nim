@@ -16,7 +16,7 @@ import sigv4
 export sigv4.AwsCredentials, sigv4.AwsScope
 
 const
-  awsEndpt* = "https://amazonaws.com"
+  awsEndpt* = "amazonaws.com"
   defRegion* = "us-east-1"
 type
   EAWSCredsMissing = object of Exception
@@ -71,16 +71,16 @@ proc request*(client:var AwsClient,params:Table):Future[AsyncResponse]=
 
   if client.isAws:
     if params.hasKey("bucket"):
-      url = ("https://$1.$2.amazonaws.com/" % [params["bucket"],client.scope.service]) & path
+      url = ("https://$1.$2.amazonaws.com/$3" % [params["bucket"],client.scope.service,path])
     else:
-      url = ("https://$1.amazonaws.com/" % [client.scope.service]) & path
+      url = ("https://$1.amazonaws.com/$2" % [client.scope.service,path])
   else:
      var
         bucket = if params.hasKey("bucket"): params["bucket"] else: ""
      if client.endpoint.port.len > 0 and client.endpoint.port != "80":
-        url = ("$1://$2:$3/" % [client.endpoint.scheme,client.endpoint.hostname,client.endpoint.port])&bucket&path
+        url = ("$1://$2:$3/$4$5" % [client.endpoint.scheme,client.endpoint.hostname,client.endpoint.port,bucket,path])
      else:
-        url = ("$1://$2/$3" % [client.endpoint.scheme,client.endpoint.hostname])& bucket&path
+        url = ("$1://$2/$3$4" % [client.endpoint.scheme,client.endpoint.hostname,bucket,path])
   let
      req:AwsRequest = (action: action, url: url, payload: payload)
   echo url
