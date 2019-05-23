@@ -8,7 +8,7 @@ suite "Test Minio Endpoint":
     echo "To test a minio endpoint export MINIO_ACCESS_ID and MINIO_ACCESS_SECRET and optionally MINIO_ENDPOINT if not the default http://localhost:9000"
   else:
     var
-      bucket = "sandbox01"
+      bucket = "00test"
       passwd = findExe("passwd")
       client:S3Client
       md5sum = execProcess("md5sum " & passwd)
@@ -17,7 +17,8 @@ suite "Test Minio Endpoint":
     const credentials = (getEnv("MINIO_ACCESS_ID"), getEnv("MINIO_ACCESS_SECRET"))
     const endpoint = getEnv("MINIO_ENDPOINT")
     const host = if endpoint.len == 0: "http://localhost:9000" else: endpoint
-    client = newS3Client(credentials,"local",host)
+    const region = "us-east-1"
+    client = newS3Client(credentials,region,host)
 
 
     test "List Buckets":
