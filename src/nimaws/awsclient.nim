@@ -10,7 +10,7 @@
 
 import times, tables, unicode,uri
 import strutils except toLower
-import httpclient, asyncdispatch
+import httpclient
 import sigv4
 
 export sigv4.AwsCredentials, sigv4.AwsScope
@@ -26,7 +26,7 @@ type
     payload: string
 
   AwsClient* {.inheritable.} = object
-    httpClient*: AsyncHttpClient
+    httpClient*: HttpClient
     credentials*: AwsCredentials
     scope*: AwsScope
     endpoint*:Uri
@@ -43,12 +43,12 @@ proc newAwsClient*(credentials:(string,string),region,service:string):AwsClient=
   let
     creds = AwsCredentials(credentials)
     # TODO - use some kind of template and compile-time variable to put the correct kernel used to build the sdk in the UA?
-    httpclient = newAsyncHttpClient("nimaws-sdk/0.1.1; "&defUserAgent.replace(" ","-").toLower&"; darwin/16.7.0")
+    httpclient = newHttpClient("nimaws-sdk/0.2.1; "&defUserAgent.replace(" ","-").toLower&"; darwin/16.7.0")
     scope = AwsScope(date:getAmzDateString(),region:region,service:service)
 
   return AwsClient(httpClient:httpclient, credentials:creds, scope:scope,key:"", key_expires:getTime())
 
-proc request*(client:var AwsClient,params:Table):Future[AsyncResponse]=
+proc request*(client:var AwsClient,params:Table):Response=
   var
     action = "GET"
     payload = ""
