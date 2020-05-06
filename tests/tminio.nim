@@ -17,13 +17,14 @@ suite "Test Minio Endpoint":
     const credentials = (getEnv("MINIO_ACCESS_ID"), getEnv("MINIO_ACCESS_SECRET"))
     const endpoint = getEnv("MINIO_ENDPOINT")
     const host = if endpoint.len == 0: "http://localhost:9000" else: endpoint
-    const region = "us-east-1"
-    client = newS3Client(credentials,region,host)
+    client = newS3Client(credentials,host)
 
+    echo endpoint
 
     test "List Buckets":
 
       let res = client.list_buckets()
+      echo res.code
       assert res.code == Http200
 
     test "List Objects":

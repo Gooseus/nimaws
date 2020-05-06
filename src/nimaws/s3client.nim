@@ -5,12 +5,16 @@
  ]#
 
 import strutils except toLower
-import times, unicode, tables, httpclient,streams,os,strutils,uri
+import times, unicode, tables, httpclient,xmlparser,xmltree,strutils,uri
 import awsclient
 
 
 type
   S3Client* = object of AwsClient
+
+  Bucket* = object
+    name:string
+    created:string
 
 proc newS3Client*(credentials:(string,string),region:string=defRegion,host:string=awsEndpt):S3Client=
   let
@@ -57,9 +61,15 @@ method list_objects*(self:var S3Client, bucket: string) : Response {.base,gcsafe
 
   return self.request(params)
 
-method list_buckets*(self:var S3Client) : Response {.base,gcsafe.} =
-  let params = {
+method list_buckets*(self:var S3Client) : seq[Bucket] {.base,gcsafe.} =
+  let 
+    params = {
       "action": "GET"
     }.toTable
 
-  return self.request(params)
+    res =self.request(params)
+  if res.code == Http200:
+      var xml = parseXml(res.body)
+      for b in xml.findAll("Bucket"):
+        result.add(Bucket(name: b[0].innerText,created: b[1].innerText))
+

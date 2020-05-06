@@ -16,22 +16,26 @@ else:
       passwd = findExe("passwd")
       md5sum = execProcess("md5sum " & passwd)
       creds = (getEnv("AWS_ACCESS_ID"), getEnv("AWS_ACCESS_SECRET"))
-      client = newS3Client(creds,region)
-
+      client:S3Client
+    
     test "List Buckets":
+      client = newS3Client(creds) #note for list buckets region is the default one
       let res = client.list_buckets()
-      assert res.code == Http200
+      assert res.len > 0
 
     test "List Objects":
       client = newS3Client(creds,region)
       let res = client.list_objects(bucket)
+      echo res.body
       assert res.code == Http200
 
     test "Put Object":
       var
         path = "files/passwd"
         payload = if fileExists(passwd): readFile(passwd) else: "some file content\nbla bla bla"
-        res = client.put_object(bucket,path,payload)
+      
+      client = newS3Client(creds,region)
+      let res = client.put_object(bucket,path,payload)
 
       assert res.code == Http200
 
@@ -40,6 +44,7 @@ else:
         path = "files/passwd"
         f: File
 
+      client = newS3Client(creds,region)
       let res = client.get_object(bucket, path)
       assert res.code == Http200
       assert md5sum.find(getMD5(res.body)) > -1
