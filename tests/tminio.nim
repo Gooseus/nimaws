@@ -1,14 +1,14 @@
-import unittest,os,httpclient,md5,osproc,strutils
+import unittest,os,httpclient,md5,osproc,strutils,marshal
 
 import nimaws/s3client
 
 suite "Test Minio Endpoint":
 
-  when not existsEnv("MINIO_ACCESS_ID") or not existsEnv("MINIO_ACCESS_SECRET") or not existsEnv("S3_BUCKET"):
+  when not existsEnv("MINIO_ACCESS_ID") or not existsEnv("MINIO_ACCESS_SECRET") or not existsEnv("MINIO_BUCKET"):
     echo "To test a minio endpoint export MINIO_ACCESS_ID, MINIO_ACCESS_SECRET, S3_BUCKET and optionally MINIO_ENDPOINT if not the default http://localhost:9000"
   else:
     var
-      bucket = getEnv("S3_BUCKET")
+      bucket = getEnv("MINIO_BUCKET")
       passwd = findExe("passwd")
       client:S3Client
       md5sum = execProcess("md5sum " & passwd)
@@ -17,19 +17,18 @@ suite "Test Minio Endpoint":
     const credentials = (getEnv("MINIO_ACCESS_ID"), getEnv("MINIO_ACCESS_SECRET"))
     const endpoint = getEnv("MINIO_ENDPOINT")
     const host = if endpoint.len == 0: "http://localhost:9000" else: endpoint
-    client = newS3Client(credentials,host)
+    
+    client = newS3Client(credentials,host=host)
 
-    echo endpoint
-
+      
     test "List Buckets":
 
+      echo "endpoint is",endpoint
       let res = client.list_buckets()
-      echo res.code
-      assert res.code == Http200
+      assert res.len > 0
 
     test "List Objects":
       let res = client.list_objects(bucket)
-      echo res.body
       assert res.code == Http200
 
     test "Put Object":

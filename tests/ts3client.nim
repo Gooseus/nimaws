@@ -5,13 +5,13 @@ import
     nimaws/awsclient
 
 when not existsEnv("AWS_ACCESS_ID") or not existsEnv("AWS_ACCESS_SECRET") or not existsEnv("S3_BUCKET"):
-    echo "To test AWS S3 export AWS_ACCESS_ID, AWS_ACCESS_SECRET and S3_BUCKET"
+    echo "To test AWS S3 export AWS_ACCESS_ID, AWS_ACCESS_SECRET and AWS_BUCKET"
 else:
   
   suite "Test s3Client":
     
     var
-      bucket = getEnv("S3_BUCKET")
+      bucket = getEnv("AWS_BUCKET")
       region = if existsEnv("AWS_REGION"): getEnv("AWS_REGION") else: defRegion
       passwd = findExe("passwd")
       md5sum = execProcess("md5sum " & passwd)
@@ -26,7 +26,6 @@ else:
     test "List Objects":
       client = newS3Client(creds,region)
       let res = client.list_objects(bucket)
-      echo res.body
       assert res.code == Http200
 
     test "Put Object":

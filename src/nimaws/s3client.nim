@@ -5,7 +5,7 @@
  ]#
 
 import strutils except toLower
-import times, unicode, tables, httpclient,xmlparser,xmltree,strutils,uri
+import times, unicode, tables, httpclient,xmlparser,xmltree,strutils,uri,marshal
 import awsclient
 
 
@@ -15,19 +15,17 @@ type
   Bucket* = object
     name:string
     created:string
-
+  
 proc newS3Client*(credentials:(string,string),region:string=defRegion,host:string=awsEndpt):S3Client=
   let
     creds = AwsCredentials(credentials)
     # TODO - use some kind of template and compile-time variable to put the correct kernel used to build the sdk in the UA?
-    httpclient = newHttpClient("nimaws-sdk/0.2.1; "&defUserAgent.replace(" ","-").toLower&"; darwin/16.7.0")
+    httpclient = newHttpClient("nimaws-sdk/0.3.3; "&defUserAgent.replace(" ","-").toLower&"; darwin/16.7.0")
     scope = AwsScope(date:getAmzDateString(),region:region,service:"s3")
-  var endpoint:string
-  if not host.startsWith("http"): 
-    endpoint = "https://" & host
-  else:
-    endpoint = host
-  return S3Client(httpClient:httpclient, credentials:creds, scope:scope, endpoint:parseUri(endpoint),isAWS:endpoint.endsWith(awsEndpt),key:"", key_expires:getTime())
+    endpoint = if host.len > 0: parseUri(host) else: parseUri(awsEndpt)
+
+  
+  return S3Client(httpClient:httpclient, credentials:creds, scope:scope, endpoint:endpoint,isAWS:endpoint.hostname == "amazonaws.com",key:"", key_expires:getTime())
 
 method get_object*(self:var S3Client,bucket,key:string) : Response {.base.} =
   var
