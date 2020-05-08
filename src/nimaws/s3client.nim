@@ -9,6 +9,10 @@ import times, unicode, tables, httpclient,xmlparser,xmltree,strutils,uri,marshal
 import awsclient
 
 
+const
+  awsURI = "https://amazonaws.com"
+  defRegion = "us-east-1"
+
 type
   S3Client* = object of AwsClient
 
@@ -16,13 +20,24 @@ type
     name:string
     created:string
   
-proc newS3Client*(credentials:(string,string),region:string=defRegion,host:string=awsEndpt):S3Client=
+proc newS3Client*(credentials:(string,string),region:string=defRegion,host:string=awsURI):S3Client=
   let
     creds = AwsCredentials(credentials)
     # TODO - use some kind of template and compile-time variable to put the correct kernel used to build the sdk in the UA?
     httpclient = newHttpClient("nimaws-sdk/0.3.3; "&defUserAgent.replace(" ","-").toLower&"; darwin/16.7.0")
     scope = AwsScope(date:getAmzDateString(),region:region,service:"s3")
-    endpoint = if host.len > 0: parseUri(host) else: parseUri(awsEndpt)
+     
+  var 
+    endpoint:Uri
+    mhost = host
+
+  if mhost.len > 0: 
+    if mhost.find("http") == -1:
+       echo "host should be a valid URI assuming http://"
+       mhost = "http://"&host
+  else:
+    mhost = awsURI  
+  endpoint = parseUri(mhost)
 
   
   return S3Client(httpClient:httpclient, credentials:creds, scope:scope, endpoint:endpoint,isAWS:endpoint.hostname == "amazonaws.com",key:"", key_expires:getTime())

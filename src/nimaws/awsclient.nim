@@ -15,9 +15,6 @@ import sigv4
 
 export sigv4.AwsCredentials, sigv4.AwsScope
 
-const
-  awsEndpt* = "https://amazonaws.com"
-  defRegion* = "us-east-1"
 type
   EAWSCredsMissing = object of Exception
   AwsRequest* = tuple
