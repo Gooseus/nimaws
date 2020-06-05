@@ -1,52 +1,56 @@
-import unittest,os,httpclient,md5,osproc,strutils,marshal
+import unittest,os,httpclient,md5,osproc,strutils,parsecfg
 
 import nimaws/s3client
 
 suite "Test Minio Endpoint":
 
-  when not existsEnv("MINIO_ACCESS_ID") or not existsEnv("MINIO_ACCESS_SECRET") or not existsEnv("MINIO_BUCKET"):
-    echo "To test a minio endpoint export MINIO_ACCESS_ID, MINIO_ACCESS_SECRET, S3_BUCKET and optionally MINIO_ENDPOINT if not the default http://localhost:9000"
-  else:
-    var
-      bucket = getEnv("MINIO_BUCKET")
-      passwd = findExe("passwd")
-      client:S3Client
-      md5sum = execProcess("md5sum " & passwd)
+  block:
+    var 
+      cfg = loadConfig(".env")#env file would be in the root of project as nimble test would see it
+    let
+      MINIO_ACCESS_ID = cfg.getSectionValue("","MINIO_ACCESS_ID")
+      MINIO_ACCESS_SECRET = cfg.getSectionValue("","MINIO_ACCESS_SECRET")
+      MINIO_BUCKET = cfg.getSectionValue("","MINIO_BUCKET")
+      MINIO_ENDPOINT = cfg.getSectionValue("","MINIO_ENDPOINT")
+
+    if MINIO_ACCESS_ID.len == 0 or not MINIO_ACCESS_SECRET.len == 0  or not MINIO_BUCKET.len == 0 or MINIO_ENDPOINT.len == 0:
+      echo "To test a minio endpoint provide MINIO_ACCESS_ID, MINIO_ACCESS_SECRET, MINIO_BUCKET and MINIO_ENDPOINT"
+    else:
+      var
+        passwd = findExe("passwd")
+        client:S3Client
+        md5sum = execProcess("md5sum " & passwd)
 
 
-    const credentials = (getEnv("MINIO_ACCESS_ID"), getEnv("MINIO_ACCESS_SECRET"))
-    const endpoint = getEnv("MINIO_ENDPOINT")
-    const host = if endpoint.len == 0: "http://localhost:9000" else: endpoint
-    
-    client = newS3Client(credentials,host=host)
-
+      let credentials = (MINIO_ACCESS_ID, MINIO_ACCESS_SECRET)
       
-    test "List Buckets":
+      client = newS3Client(credentials,host=MINIO_ENDPOINT)
 
-      echo "endpoint is",endpoint
-      let res = client.list_buckets()
-      assert res.len > 0
+        
+      test "List Buckets":
 
-    test "List Objects":
-      let res = client.list_objects(bucket)
-      assert res.code == Http200
+        let res = client.list_buckets()
+        assert res.len > 0
 
-    test "Put Object":
-      var
-        path = "/files/passwd"
-        payload = if fileExists(passwd): readFile(passwd) else: "some file content\nbla bla bla"
-        res = client.put_object(bucket,path,payload)
+      test "List Objects":
+        let res = client.list_objects(MINIO_BUCKET)
+        assert res.code == Http200
 
-      assert res.code == Http200
+      test "Put Object":
+        var
+          path = "/files/passwd"
+          payload = if fileExists(passwd): readFile(passwd) else: "some file content\nbla bla bla"
+          res = client.put_object(MINIO_BUCKET,path,payload)
 
-    test "Get Object":
-      var
-        path = "/files/passwd"
-        f: File
+        assert res.code == Http200
 
-      let res = client.get_object(bucket, path)
-      assert res.code == Http200
-      assert md5sum.find(getMD5(res.body)) > -1
+      test "Get Object":
+        var
+          path = "/files/passwd"
+       
+        let res = client.get_object(MINIO_BUCKET, path)
+        assert res.code == Http200
+        assert md5sum.find(getMD5(res.body)) > -1
 
 
 

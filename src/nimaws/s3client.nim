@@ -42,7 +42,7 @@ proc newS3Client*(credentials:(string,string),region:string=defRegion,host:strin
   
   return S3Client(httpClient:httpclient, credentials:creds, scope:scope, endpoint:endpoint,isAWS:endpoint.hostname == "amazonaws.com",key:"", key_expires:getTime())
 
-method get_object*(self:var S3Client,bucket,key:string) : Response {.base.} =
+proc get_object*(self:var S3Client,bucket,key:string) : Response=
   var
     path = key
   let params = {
@@ -57,7 +57,7 @@ method get_object*(self:var S3Client,bucket,key:string) : Response {.base.} =
 ##  bucket name
 ##  path has to be absoloute path in the form /path/to/file
 ##  payload is binary string
-method put_object*(self:var S3Client,bucket,path:string,payload:string) : Response {.base,gcsafe.} =
+proc put_object*(self:var S3Client,bucket,path:string,payload:string) : Response {.gcsafe.} =
   let params = {
       "action": "PUT",
       "bucket": bucket,
@@ -67,14 +67,17 @@ method put_object*(self:var S3Client,bucket,path:string,payload:string) : Respon
 
   return self.request(params)
 
-method list_objects*(self:var S3Client, bucket: string) : Response {.base,gcsafe.} =
-  let params = {
+proc list_objects*(self:var S3Client, bucket: string) : Response {.gcsafe.} =
+  let 
+    params = {
       "bucket": bucket
     }.toTable
 
-  return self.request(params)
+  result = self.request(params)
+  
+  echo "list objects", result.body
 
-method list_buckets*(self:var S3Client) : seq[Bucket] {.base,gcsafe.} =
+proc list_buckets*(self:var S3Client) : seq[Bucket] {.gcsafe.} =
   let 
     params = {
       "action": "GET"

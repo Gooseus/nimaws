@@ -12,3 +12,4 @@
 *bin*
 *doNotCommit*
 *.sublime*
+.env
