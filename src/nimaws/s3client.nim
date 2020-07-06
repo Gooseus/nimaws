@@ -19,6 +19,12 @@ type
   Bucket* = object
     name:string
     created:string
+
+  Bobject* = object
+    key:string
+    modified:string
+    etag:string
+    size:int
   
 proc newS3Client*(credentials:(string,string),region:string=defRegion,host:string=awsURI):S3Client=
   let
@@ -67,15 +73,20 @@ proc put_object*(self:var S3Client,bucket,path:string,payload:string) : Response
 
   return self.request(params)
 
-proc list_objects*(self:var S3Client, bucket: string) : Response {.gcsafe.} =
+proc list_objects*(self:var S3Client, bucket: string) : seq[Bobject] {.gcsafe.} =
   let 
     params = {
       "bucket": bucket
     }.toTable
+    res = self.request(params)
+  if res.code == Http200:
+      var xml = parseXml(res.body)
+      for c in xml.findAll("Contents"):
+        result.add(Bobject(key: c[0].innerText,modified: c[1].innerText,etag: c[2].innerText,size:parseInt(c[3].innerText)))
 
-  result = self.request(params)
+
   
-  echo "list objects", result.body
+  echo "list objects", res.body
 
 proc list_buckets*(self:var S3Client) : seq[Bucket] {.gcsafe.} =
   let 

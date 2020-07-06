@@ -32,10 +32,7 @@ suite "Test Minio Endpoint":
         let res = client.list_buckets()
         assert res.len > 0
 
-      test "List Objects":
-        let res = client.list_objects(MINIO_BUCKET)
-        assert res.code == Http200
-
+      
       test "Put Object":
         var
           path = "/files/passwd"
@@ -51,6 +48,11 @@ suite "Test Minio Endpoint":
         let res = client.get_object(MINIO_BUCKET, path)
         assert res.code == Http200
         assert md5sum.find(getMD5(res.body)) > -1
+      
+      test "List Objects":
+        let res = client.list_objects(MINIO_BUCKET)
+        assert res.len > 0
+        
 
 
 
