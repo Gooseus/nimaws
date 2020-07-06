@@ -21,10 +21,10 @@ type
     created:string
 
   Bobject* = object
-    key:string
-    modified:string
-    etag:string
-    size:int
+    key*:string
+    modified*:string
+    etag*:string
+    size*:int
   
 proc newS3Client*(credentials:(string,string),region:string=defRegion,host:string=awsURI):S3Client=
   let
@@ -83,10 +83,6 @@ proc list_objects*(self:var S3Client, bucket: string) : seq[Bobject] {.gcsafe.} 
       var xml = parseXml(res.body)
       for c in xml.findAll("Contents"):
         result.add(Bobject(key: c[0].innerText,modified: c[1].innerText,etag: c[2].innerText,size:parseInt(c[3].innerText)))
-
-
-  
-  echo "list objects", res.body
 
 proc list_buckets*(self:var S3Client) : seq[Bucket] {.gcsafe.} =
   let 

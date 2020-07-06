@@ -52,6 +52,7 @@ suite "Test Minio Endpoint":
       test "List Objects":
         let res = client.list_objects(MINIO_BUCKET)
         assert res.len > 0
+        assert res[0].key == "files/passwd"
         
 
 
