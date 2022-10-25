@@ -1,52 +1,59 @@
-import unittest,os,asyncdispatch,httpclient,md5,osproc,strutils
+import unittest,os,httpclient,md5,osproc,strutils,parsecfg
 
 import nimaws/s3client
 
 suite "Test Minio Endpoint":
 
-  when not existsEnv("MINIO_ACCESS_ID") and not existsEnv("MINIO_ACCESS_SECRET"):
-    echo "To test a minio endpoint export MINIO_ACCESS_ID and MINIO_ACCESS_SECRET and optionally MINIO_ENDPOINT if not the default http://localhost:9000"
-  else:
-    var
-      bucket = "00test"
-      passwd = findExe("passwd")
-      client:S3Client
-      md5sum = execProcess("md5sum " & passwd)
+  block:
+    var 
+      cfg = loadConfig(".env")#env file would be in the root of project as nimble test would see it
+    let
+      MINIO_ACCESS_ID = cfg.getSectionValue("","MINIO_ACCESS_ID")
+      MINIO_ACCESS_SECRET = cfg.getSectionValue("","MINIO_ACCESS_SECRET")
+      MINIO_BUCKET = cfg.getSectionValue("","MINIO_BUCKET")
+      MINIO_ENDPOINT = cfg.getSectionValue("","MINIO_ENDPOINT")
 
-
-    const credentials = (getEnv("MINIO_ACCESS_ID"), getEnv("MINIO_ACCESS_SECRET"))
-    const endpoint = getEnv("MINIO_ENDPOINT")
-    const host = if endpoint.len == 0: "http://localhost:9000" else: endpoint
-    const region = "us-east-1"
-    client = newS3Client(credentials,region,host)
-
-
-    test "List Buckets":
-
-      let res = waitFor client.list_buckets()
-      assert res.code == Http200
-
-    test "List Objects":
-      let res = waitFor client.list_objects(bucket)
-      echo waitFor res.body
-      assert res.code == Http200
-
-    test "Put Object":
+    if MINIO_ACCESS_ID.len == 0 or not MINIO_ACCESS_SECRET.len == 0  or not MINIO_BUCKET.len == 0 or MINIO_ENDPOINT.len == 0:
+      echo "To test a minio endpoint provide MINIO_ACCESS_ID, MINIO_ACCESS_SECRET, MINIO_BUCKET and MINIO_ENDPOINT"
+    else:
       var
-        path = "/files/passwd"
-        payload = if fileExists(passwd): readFile(passwd) else: "some file content\nbla bla bla"
-        res = waitFor client.put_object(bucket,path,payload)
+        passwd = findExe("passwd")
+        client:S3Client
+        md5sum = execProcess("md5sum " & passwd)
 
-      assert res.code == Http200
 
-    test "Get Object":
-      var
-        path = "/files/passwd"
-        f: File
+      let credentials = (MINIO_ACCESS_ID, MINIO_ACCESS_SECRET)
+      
+      client = newS3Client(credentials,host=MINIO_ENDPOINT)
 
-      let res = waitFor client.get_object(bucket, path)
-      assert res.code == Http200
-      assert md5sum.find(getMD5(waitFor res.body)) > -1
+        
+      test "List Buckets":
+
+        let res = client.list_buckets()
+        assert res.len > 0
+
+      
+      test "Put Object":
+        var
+          path = "/files/passwd"
+          payload = if fileExists(passwd): readFile(passwd) else: "some file content\nbla bla bla"
+          res = client.put_object(MINIO_BUCKET,path,payload)
+
+        assert res.code == Http200
+
+      test "Get Object":
+        var
+          path = "/files/passwd"
+       
+        let res = client.get_object(MINIO_BUCKET, path)
+        assert res.code == Http200
+        assert md5sum.find(getMD5(res.body)) > -1
+      
+      test "List Objects":
+        let res = client.list_objects(MINIO_BUCKET)
+        assert res.len > 0
+        assert res[0].key == "files/passwd"
+        
 
 
 

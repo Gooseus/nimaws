@@ -10,14 +10,11 @@
 
 import times, tables, unicode,uri
 import strutils except toLower
-import httpclient, asyncdispatch
+import httpclient
 import sigv4
 
 export sigv4.AwsCredentials, sigv4.AwsScope
 
-const
-  awsEndpt* = "amazonaws.com"
-  defRegion* = "us-east-1"
 type
   EAWSCredsMissing = object of Exception
   AwsRequest* = tuple
@@ -26,7 +23,7 @@ type
     payload: string
 
   AwsClient* {.inheritable.} = object
-    httpClient*: AsyncHttpClient
+    httpClient*: HttpClient
     credentials*: AwsCredentials
     scope*: AwsScope
     endpoint*:Uri
@@ -43,12 +40,12 @@ proc newAwsClient*(credentials:(string,string),region,service:string):AwsClient=
   let
     creds = AwsCredentials(credentials)
     # TODO - use some kind of template and compile-time variable to put the correct kernel used to build the sdk in the UA?
-    httpclient = newAsyncHttpClient("nimaws-sdk/0.1.1; "&defUserAgent.replace(" ","-").toLower&"; darwin/16.7.0")
+    httpclient = newHttpClient("nimaws-sdk/0.3.3; "&defUserAgent.replace(" ","-").toLower&"; darwin/16.7.0")
     scope = AwsScope(date:getAmzDateString(),region:region,service:service)
 
   return AwsClient(httpClient:httpclient, credentials:creds, scope:scope,key:"", key_expires:getTime())
 
-proc request*(client:var AwsClient,params:Table):Future[AsyncResponse]=
+proc request*(client:var AwsClient,params:Table):Response=
   var
     action = "GET"
     payload = ""
@@ -78,12 +75,15 @@ proc request*(client:var AwsClient,params:Table):Future[AsyncResponse]=
      var
         bucket = if params.hasKey("bucket"): params["bucket"] else: ""
      if client.endpoint.port.len > 0 and client.endpoint.port != "80":
-        url = ("$1://$2:$3/$4$5" % [client.endpoint.scheme,client.endpoint.hostname,client.endpoint.port,bucket,path])
+        url = ("$1://$2:$3/$4$5" % [if client.endpoint.scheme.len > 0: client.endpoint.scheme else: "http",client.endpoint.hostname,client.endpoint.port,bucket,path])
      else:
         url = ("$1://$2/$3$4" % [client.endpoint.scheme,client.endpoint.hostname,bucket,path])
+  
+  when not defined(release):
+    echo "endpoint url is ",url
+  
   let
      req:AwsRequest = (action: action, url: url, payload: payload)
-  echo url
   # Add signing key caching so we can skip a step
   # utilizing some operator overloading on the create_aws_authorization proc.
   # if passed a key and not headers, just return the authorization string; otherwise, create the key and add to the headers
