@@ -10,7 +10,7 @@ if not existsEnv("AWS_ACCESS_ID") or not existsEnv("AWS_ACCESS_SECRET"):
 
 const credentials = (getEnv("AWS_ACCESS_ID"), getEnv("AWS_ACCESS_SECRET"))
 
-var client = newS3Client(credentials,"us-east-1")
+var client = newS3Client(credentials, "us-east-1")
 
 try:
   let res = waitFor client.list_buckets()
