@@ -4,10 +4,10 @@
   Implements functions to handle the AWS Signature v4 request signing
   http://docs.aws.amazon.com/general/latest/gr/sigv4_signing.html
  ]#
-import os, times
+import times
 import strutils except toLower
-import sequtils, algorithm, tables, nimSHA2
-import securehash, hmac, base64, re
+import algorithm, tables, nimSHA2
+import hmac, re
 import unicode except strip
 from uri import parseUri
 

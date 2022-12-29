@@ -16,7 +16,7 @@ import sigv4
 export sigv4.AwsCredentials, sigv4.AwsScope
 
 type
-  EAWSCredsMissing = object of Exception
+  EAWSCredsMissing = object of IOError
   AwsRequest* = tuple
     action: string
     url: string
@@ -34,7 +34,7 @@ type
 const iso_8601_aws = "yyyyMMdd'T'HHmmss'Z'"
 
 proc getAmzDateString*():string=
-  return format(getGMTime(getTime()), iso_8601_aws)
+  return format(utc(getTime()), iso_8601_aws)
 
 proc newAwsClient*(credentials:(string,string),region,service:string):AwsClient=
   let
@@ -91,7 +91,7 @@ proc request*(client:var AwsClient,params:Table):Response=
   if client.key_expires <= getTime():
     client.scope.date = getAmzDateString()
     client.key = create_aws_authorization(client.credentials, req, client.httpClient.headers.table, client.scope)
-    client.key_expires = getTime() + initInterval(minutes=5)
+    client.key_expires = getTime() + initTimeInterval(minutes=5)
   else:
     let auth = create_aws_authorization(client.credentials[0], client.key, req, client.httpClient.headers.table, client.scope)
     client.httpClient.headers.add("Authorization", auth)
