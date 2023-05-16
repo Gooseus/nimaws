@@ -15,14 +15,15 @@ let
   bucket = "tbteroz01"
   path = "files/s3_put_object"
   filename = "s3_put_object"
-  payload = if fileExists(filename): readFile(filename) else: "some file content/bla bla bla"
+  payload = if fileExists(filename): readFile(
+      filename) else: "some file content/bla bla bla"
 
-var client = newS3Client(credentials,"us-west-2")
+var client = newS3Client(credentials, "us-west-2")
 
 
 try:
-  var res = waitFor client.put_object(bucket,path,payload)
-  echo  res.status
+  var res = waitFor client.put_object(bucket, path, payload)
+  echo res.status
   echo "Tranfer completed"
 except HttpRequestError:
   echo "http request error: "
